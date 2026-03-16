@@ -37,7 +37,7 @@ def pk_to_xi(k, Pk, r_grid):
             integrand = k**2 * Pk / (2 * np.pi**2)
         else:
             integrand = k**2 * Pk * np.sinc(k * r / np.pi) / (2 * np.pi**2)
-        xi[i] = np.trapz(integrand, k)
+        xi[i] = np.trapezoid(integrand, k)
     return xi
 
 
@@ -49,7 +49,7 @@ def xi_to_pk(r, xi, k_grid):
     Pk = np.zeros_like(k_grid)
     for i, ki in enumerate(k_grid):
         integrand = r**2 * xi * np.sinc(ki * r / np.pi) * 4 * np.pi
-        Pk[i] = np.trapz(integrand, r)
+        Pk[i] = np.trapezoid(integrand, r)
     return Pk
 
 

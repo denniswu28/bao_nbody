@@ -218,7 +218,7 @@ if __name__ == "__main__":
                                   z_initial=49.0, seed=42)
 
     # Measure P(k) from ICs and compare to input
-    k_out, Pk_out = estimate_pk(pos, N, L, n_mesh=128)
+    k_out, Pk_out, _ = estimate_pk(pos, N, L, n_mesh=128)
     k_in = np.logspace(-3, 0, 300)
     Pk_in = power_spectrum(k_in, h, Omega_m, Omega_b, n_s, sigma8, z=49.0)
 

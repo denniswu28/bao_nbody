@@ -15,21 +15,14 @@ import numpy as np
 def sound_horizon(h, Omega_m, Omega_b):
     """
     Compute the BAO sound horizon scale r_s in Mpc/h.
-    Eisenstein & Hu (1998) eq. 6.
+    Eisenstein & Hu (1998) eq. 26 fitting formula.
+    Returns ~147 Mpc/h for Planck cosmology.
     """
     Omega_m_h2 = Omega_m * h**2
     Omega_b_h2 = Omega_b * h**2
 
-    z_eq = 2.5e4 * Omega_m_h2 * (2.725 / 2.7)**(-4)       # matter-radiation equality
-    z_drag = 1291 * Omega_m_h2**0.251 / (1 + 0.659 * Omega_m_h2**0.828) \
-             * (1 + 0.828 * Omega_b_h2**0.958 * Omega_m_h2**(-0.291))  # drag epoch
-
-    R_drag = 31.5e3 * Omega_b_h2 * (2.725 / 2.7)**(-4) * (1000 / z_drag)
-    R_eq   = 31.5e3 * Omega_b_h2 * (2.725 / 2.7)**(-4) * (1000 / z_eq)
-
-    r_s = 2 / (3 * z_eq) * np.sqrt(6 / R_eq) \
-          * np.log((np.sqrt(1 + R_drag) + np.sqrt(R_drag + R_eq)) / (1 + np.sqrt(R_eq))) \
-          * 2997.9 / np.sqrt(Omega_m_h2)   # in Mpc/h
+    r_s = 44.5 * np.log(9.83 / Omega_m_h2) \
+          / np.sqrt(1 + 10 * Omega_b_h2**0.75)   # Mpc/h
 
     return r_s
 
@@ -211,7 +204,7 @@ def _compute_sigma8(Pk_unnorm, k):
     W[x < 1e-3] = 1.0
 
     integrand = k**2 * Pk_unnorm * W**2 / (2 * np.pi**2)
-    sigma8_sq = np.trapz(integrand, k)
+    sigma8_sq = np.trapezoid(integrand, k)
     return np.sqrt(sigma8_sq)
 
 
