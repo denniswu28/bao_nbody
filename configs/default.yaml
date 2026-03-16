@@ -1,0 +1,51 @@
+# BAO N-body Pipeline Configuration
+
+cosmology:
+  h: 0.6736          # Hubble parameter H0 / 100
+  Omega_m: 0.3153     # matter density
+  Omega_b: 0.0493     # baryon density
+  n_s: 0.9649         # spectral index
+  sigma8: 0.8111      # amplitude of fluctuations
+  z_eff: 0.38         # effective redshift
+
+box:
+  L: 1500.0           # box side length [Mpc/h]
+  N: 128              # grid points per side (N^3 particles)
+  N_mesh: 256         # PM mesh resolution (should be >= 2*N)
+
+galaxy:
+  b: 1.5              # linear galaxy bias
+  nbar: 3.0e-4        # mean galaxy number density [h/Mpc]^3
+
+simulation:
+  n_steps: 50         # number of leapfrog steps
+  z_initial: 49.0     # starting redshift for N-body
+  z_snapshots:        # redshifts at which to save snapshots
+    - 49.0
+    - 5.0
+    - 2.0
+    - 1.0
+    - 0.5
+    - 0.0
+  seed: 42            # random seed for reproducibility
+
+lognormal:
+  seed: 123           # separate seed for lognormal catalog
+
+mcmc:
+  n_steps: 10000      # number of MCMC steps
+  n_burn: 2000        # burn-in steps to discard
+  alpha_init: 1.0     # initial BAO dilation parameter
+  Sigma_init: 5.0     # initial BAO damping scale [Mpc/h]
+  B_init: 1.0         # initial broad-band amplitude
+  alpha_prior: [0.8, 1.2]   # flat prior range on alpha
+  Sigma_prior: [0.0, 20.0]  # flat prior range on Sigma [Mpc/h]
+  B_prior: [0.5, 2.0]       # flat prior range on B
+
+output:
+  snapshot_dir: outputs/snapshots
+  figure_dir: outputs/figures
+  mcmc_dir: outputs/mcmc
+  save_snapshots: true
+  make_animation: true
+  animation_fps: 5
