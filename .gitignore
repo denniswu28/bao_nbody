@@ -22,6 +22,10 @@ outputs/figures/*.png
 outputs/figures/*.pdf
 outputs/mcmc/*.png
 outputs/mcmc/*.pdf
+outputs/mcmc/*.npz
+
+# src/outputs (dev/test outputs — also large)
+src/outputs/
 
 # Keep output directory structure
 !outputs/snapshots/.gitkeep
@@ -32,6 +36,8 @@ outputs/mcmc/*.pdf
 data/*.fits
 data/*.h5
 data/*.hdf5
+*.h5
+*.npz
 
 # OS
 .DS_Store

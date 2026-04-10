@@ -43,7 +43,7 @@ def comoving_distance(z, h, Omega_m, Omega_de=None, w0=-1.0, wa=0.0):
         Omega_de_z = Omega_de * a**(-3*(1 + w0 + wa)) * np.exp(-3 * wa * (1 - a))
         return np.sqrt(Omega_m * (1 + zp)**3 + Omega_de_z)
 
-    chi, _ = quad(E, 0, z, limit=100)
+    chi, _ = quad(lambda zp: 1.0 / E(zp), 0, z, limit=100)
     return c_over_H0 * chi
 
 
@@ -147,29 +147,71 @@ def plot_density_slices(snapshots, L, fname=None):
     return fig
 
 
-def make_animation(snapshot_dir, output_fname, fps=5):
+def make_animation(snapshot_dir, output_fname, L, fps=5):
     """
-    Make an MP4 animation from saved density slice PNGs.
-    Requires ffmpeg.
+    Make an MP4 animation of the density field evolution from HDF5 snapshots.
+
+    Reads all snap_*.h5 files in snapshot_dir, renders a projected density
+    slice for each, and stitches them into an MP4 using matplotlib animation.
     """
     import glob
-    import subprocess
+    import h5py
+    import matplotlib
+    matplotlib.use('Agg')
+    # Set ffmpeg path from imageio-ffmpeg before any animation imports
+    try:
+        import imageio_ffmpeg
+        matplotlib.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        pass
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import FuncAnimation, FFMpegWriter
 
-    frames = sorted(glob.glob(os.path.join(snapshot_dir, 'frame_*.png')))
-    if not frames:
-        print("No frames found for animation.")
+    snap_files = sorted(glob.glob(os.path.join(snapshot_dir, 'snap_*.h5')))
+    if not snap_files:
+        print("No HDF5 snapshots found for animation.")
         return
 
-    cmd = [
-        'ffmpeg', '-y',
-        '-framerate', str(fps),
-        '-pattern_type', 'glob',
-        '-i', os.path.join(snapshot_dir, 'frame_*.png'),
-        '-c:v', 'libx264',
-        '-pix_fmt', 'yuv420p',
-        output_fname
-    ]
-    subprocess.run(cmd, check=True)
+    # Load all density fields
+    frames = []
+    for f in snap_files:
+        with h5py.File(f, 'r') as hf:
+            delta = hf['delta'][:]
+            z = float(hf.attrs['z'])
+        # Project along z-axis (thin slab for contrast)
+        slab = delta.shape[2] // 8
+        delta_proj = delta[:, :, :slab].mean(axis=2)
+        frames.append((delta_proj, z))
+
+    print(f"Rendering animation: {len(frames)} frames at {fps} fps")
+
+    # Consistent color scale across all frames
+    vmax_global = max(np.percentile(np.abs(f[0]), 99.5) for f in frames)
+
+    fig, ax = plt.subplots(figsize=(7, 6))
+    im = ax.imshow(np.log10(np.clip(frames[0][0] + 1, 1e-2, None)),
+                   cmap='inferno', origin='lower',
+                   extent=[-L/2, L/2, -L/2, L/2],
+                   vmin=-0.5, vmax=np.log10(1 + vmax_global))
+    cbar = plt.colorbar(im, ax=ax, label=r'$\log_{10}(1 + \delta)$')
+    title = ax.set_title(f'z = {frames[0][1]:.2f}', fontsize=16, fontweight='bold')
+    ax.set_xlabel(r'$x$ [Mpc/$h$]', fontsize=12)
+    ax.set_ylabel(r'$y$ [Mpc/$h$]', fontsize=12)
+
+    def update(i):
+        delta_proj, z = frames[i]
+        data = np.log10(np.clip(delta_proj + 1, 1e-2, None))
+        im.set_data(data)
+        title.set_text(f'z = {z:.2f}')
+        return [im, title]
+
+    anim = FuncAnimation(fig, update, frames=len(frames),
+                         interval=1000//fps, blit=False)
+
+    os.makedirs(os.path.dirname(output_fname), exist_ok=True)
+    writer = FFMpegWriter(fps=fps, extra_args=['-pix_fmt', 'yuv420p'])
+    anim.save(output_fname, writer=writer, dpi=150)
+    plt.close(fig)
     print(f"Animation saved: {output_fname}")
 
 

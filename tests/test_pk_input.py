@@ -14,19 +14,24 @@ from pk_input import power_spectrum, sound_horizon, transfer_function_eh
 
 def test_sigma8_normalization():
     """P(k) should be normalized so sigma8 matches input."""
-    from pk_input import _compute_sigma8
     h, Omega_m, Omega_b, n_s, sigma8 = 0.6736, 0.3153, 0.0493, 0.9649, 0.8111
-    k = np.logspace(-4, 2, 1000)
+    k = np.logspace(-4, 2, 2000)
     Pk = power_spectrum(k, h, Omega_m, Omega_b, n_s, sigma8)
-    sigma8_measured = _compute_sigma8(Pk, k)
+    # Compute sigma8 from the output P(k) directly
+    R = 8.0
+    x = k * R
+    W = 3 * (np.sin(x) - x * np.cos(x)) / x**3
+    W[x < 1e-3] = 1.0
+    integrand = k**2 * Pk * W**2 / (2 * np.pi**2)
+    sigma8_measured = np.sqrt(np.trapezoid(integrand, k))
     assert abs(sigma8_measured - sigma8) / sigma8 < 0.01, \
         f"sigma8 mismatch: {sigma8_measured:.4f} vs {sigma8:.4f}"
 
 
 def test_sound_horizon_range():
-    """Sound horizon should be ~150 Mpc/h for Planck cosmology."""
+    """Sound horizon should be ~150 Mpc for Planck cosmology (EH98 fitting formula)."""
     r_s = sound_horizon(0.6736, 0.3153, 0.0493)
-    assert 140 < r_s < 160, f"Unexpected r_s = {r_s:.1f} Mpc/h"
+    assert 140 < r_s < 160, f"Unexpected r_s = {r_s:.1f} Mpc"
 
 
 def test_pk_positive():

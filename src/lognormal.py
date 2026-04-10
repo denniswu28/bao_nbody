@@ -114,7 +114,7 @@ def generate_lognormal_field(N_mesh, L, Pk_G_func, seed=42):
 
     # Generate Gaussian random field with P_G(k)
     delta_k = generate_gaussian_field(N_mesh, L, Pk_G_func, seed=seed)
-    delta_G = np.real(np.fft.ifftn(delta_k)) * N_mesh**3
+    delta_G = np.real(np.fft.ifftn(delta_k))
 
     # Variance of Gaussian field
     sigma_G2 = np.var(delta_G)
@@ -262,6 +262,146 @@ def generate_lognormal_catalog(N_mesh, L, h, Omega_m, Omega_b, n_s, sigma8,
 
     print(f"  Generated {pos.shape[1]} galaxies  (expected {nbar * L**3:.0f})")
     return pos, delta_LN
+
+
+def generate_mock_covariance(N_mocks, N_mesh, L, h, Omega_m, Omega_b,
+                              n_s, sigma8, nbar, b=1.0, z=0.38,
+                              seed_start=1000, k_max=0.3):
+    """
+    Generate N_mocks lognormal catalogs, measure P(k) from each,
+    and compute the sample covariance matrix.
+
+    Parameters
+    ----------
+    N_mocks : int
+        Number of independent lognormal realizations.
+    k_max : float
+        Maximum wavenumber for the covariance (h/Mpc).
+
+    Returns
+    -------
+    k_bins : ndarray, shape (N_bins,)
+        Bin-center wavenumbers.
+    Pk_mean : ndarray, shape (N_bins,)
+        Mean P(k) across mocks.
+    cov : ndarray, shape (N_bins, N_bins)
+        Sample covariance matrix of P(k).
+    Pk_all : ndarray, shape (N_mocks, N_bins)
+        Individual P(k) measurements.
+    """
+    from pk_input import power_spectrum as pk_func
+    from power_spectrum import estimate_pk
+    from scipy.interpolate import interp1d
+
+    print(f"Generating {N_mocks} lognormal mocks for covariance matrix")
+    print(f"  N_mesh={N_mesh}, L={L}, nbar={nbar:.1e}, b={b}, z={z}")
+
+    # Precompute Gaussian P_G(k) (same for all mocks)
+    k_arr = np.logspace(-3, 1, 500)
+    Pk_matter = pk_func(k_arr, h, Omega_m, Omega_b, n_s, sigma8, z=z)
+    Pk_galaxy = b**2 * Pk_matter
+    _, Pk_G = galaxy_pk_to_gaussian_pk(k_arr, Pk_galaxy, N_mesh, L)
+    Pk_G_interp = interp1d(k_arr, Pk_G, bounds_error=False, fill_value=0.0)
+
+    Pk_all = None
+    k_bins = None
+
+    for i in range(N_mocks):
+        seed = seed_start + i
+
+        # Generate lognormal field and Poisson sample
+        delta_LN = generate_lognormal_field(N_mesh, L, Pk_G_interp, seed=seed)
+        pos = poisson_sample_vectorized(delta_LN, nbar, L, seed=seed + N_mocks)
+
+        # Measure P(k)
+        k, Pk, nmodes = estimate_pk(pos, N_mesh, L, n_mesh=N_mesh)
+
+        # Apply k_max cut
+        mask = k <= k_max
+        k = k[mask]
+        Pk = Pk[mask]
+
+        if Pk_all is None:
+            k_bins = k
+            Pk_all = np.zeros((N_mocks, len(k_bins)))
+
+        Pk_all[i] = Pk
+
+        if (i + 1) % 10 == 0 or i == 0:
+            print(f"  Mock {i+1}/{N_mocks} done  (N_gal={pos.shape[1]})")
+
+    # Sample mean and covariance
+    Pk_mean = np.mean(Pk_all, axis=0)
+    cov = np.cov(Pk_all, rowvar=False)   # shape (N_bins, N_bins)
+
+    # Hartlap correction factor for unbiased inverse covariance
+    # (Hartlap et al. 2007): factor = (N_mocks - N_bins - 2) / (N_mocks - 1)
+    N_bins = len(k_bins)
+    hartlap = (N_mocks - N_bins - 2) / (N_mocks - 1)
+    print(f"\nCovariance computed: {N_bins} k-bins from {N_mocks} mocks")
+    print(f"  Hartlap correction factor: {hartlap:.3f}")
+    if hartlap <= 0:
+        print(f"  WARNING: N_mocks={N_mocks} < N_bins+2={N_bins+2}, "
+              "covariance matrix is singular!")
+
+    return k_bins, Pk_mean, cov, Pk_all
+
+
+def generate_mock_xi(N_mocks, N_mesh, L, h, Omega_m, Omega_b, n_s, sigma8,
+                     nbar, b=1.0, z=0.0, seed_start=2000,
+                     r_max=200.0, n_bins=60):
+    """
+    Generate N_mocks lognormal catalogs, measure xi(r) from each,
+    and return the mean and scatter.
+
+    Returns
+    -------
+    r_bins : ndarray, shape (N_bins,)
+    xi_mean : ndarray, shape (N_bins,)
+    xi_std : ndarray, shape (N_bins,)
+    xi_all : ndarray, shape (N_mocks, N_bins)
+    """
+    from pk_input import power_spectrum as pk_func
+    from power_spectrum import estimate_xi
+    from scipy.interpolate import interp1d
+
+    print(f"Generating {N_mocks} lognormal mocks for xi(r) averaging")
+    print(f"  N_mesh={N_mesh}, L={L}, nbar={nbar:.1e}, b={b}, z={z}")
+
+    # Precompute Gaussian P_G(k) (same for all mocks)
+    k_arr = np.logspace(-3, 1, 500)
+    Pk_matter = pk_func(k_arr, h, Omega_m, Omega_b, n_s, sigma8, z=z)
+    Pk_galaxy = b**2 * Pk_matter
+    _, Pk_G = galaxy_pk_to_gaussian_pk(k_arr, Pk_galaxy, N_mesh, L)
+    Pk_G_interp = interp1d(k_arr, Pk_G, bounds_error=False, fill_value=0.0)
+
+    xi_all = None
+    r_bins = None
+
+    for i in range(N_mocks):
+        seed = seed_start + i
+
+        delta_LN = generate_lognormal_field(N_mesh, L, Pk_G_interp, seed=seed)
+        pos = poisson_sample_vectorized(delta_LN, nbar, L, seed=seed + N_mocks)
+
+        r, xi, _ = estimate_xi(pos, N_mesh, L, n_mesh=N_mesh,
+                               r_max=r_max, n_bins=n_bins)
+
+        if xi_all is None:
+            r_bins = r
+            xi_all = np.zeros((N_mocks, len(r_bins)))
+
+        xi_all[i] = xi
+
+        if (i + 1) % 10 == 0 or i == 0:
+            print(f"  Mock {i+1}/{N_mocks} done  (N_gal={pos.shape[1]})")
+
+    xi_mean = np.mean(xi_all, axis=0)
+    xi_std = np.std(xi_all, axis=0)
+
+    print(f"\nxi(r) averaged: {len(r_bins)} r-bins from {N_mocks} mocks")
+
+    return r_bins, xi_mean, xi_std, xi_all
 
 
 if __name__ == "__main__":

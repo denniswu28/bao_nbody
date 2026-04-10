@@ -22,10 +22,25 @@ simulation:
   z_initial: 49.0     # starting redshift for N-body
   z_snapshots:        # redshifts at which to save snapshots
     - 49.0
+    - 15.0
+    - 10.0
+    - 7.0
     - 5.0
+    - 4.0
+    - 3.0
+    - 2.5
     - 2.0
+    - 1.75
+    - 1.5
+    - 1.25
     - 1.0
+    - 0.8
+    - 0.6
     - 0.5
+    - 0.4
+    - 0.3
+    - 0.2
+    - 0.1
     - 0.0
   seed: 42            # random seed for reproducibility
 
@@ -38,9 +53,9 @@ mcmc:
   alpha_init: 1.0     # initial BAO dilation parameter
   Sigma_init: 5.0     # initial BAO damping scale [Mpc/h]
   B_init: 1.0         # initial broad-band amplitude
-  alpha_prior: [0.8, 1.2]   # flat prior range on alpha
+  alpha_prior: [0.5, 1.5]   # flat prior range on alpha
   Sigma_prior: [0.0, 20.0]  # flat prior range on Sigma [Mpc/h]
-  B_prior: [0.5, 2.0]       # flat prior range on B
+  B_prior: [0.5, 4.0]       # flat prior range on B (must cover b^2 for biased tracers)
 
 output:
   snapshot_dir: outputs/snapshots

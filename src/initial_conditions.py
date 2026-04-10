@@ -83,9 +83,14 @@ def generate_gaussian_field(N, L, Pk_func, seed=42):
     mask = k > 0
     Pk[mask] = Pk_func(k[mask])
 
-    # Volume element for normalization: <|delta_k|^2> = P(k) / V
+    # Normalization: numpy DFT convention requires <|DFT(delta)|^2> = N^6 * P(k) / V.
+    # Since we take Re(IFFT) of non-Hermitian modes (discards half the power),
+    # we compensate by setting amplitude = N^3 * sqrt(P / V) so that the
+    # real-space field recovers the correct P(k) after the round-trip:
+    #   <|delta_k|^2> = 2 * amplitude^2 = 2 * N^6 * P / V
+    #   Re(IFFT) halves the power → recovered P(k) = P(k).
     V = L**3
-    amplitude = np.sqrt(Pk / (2 * V))
+    amplitude = N**3 * np.sqrt(Pk / V)
 
     # Draw complex Gaussian modes
     re = rng.standard_normal((N, N, N))

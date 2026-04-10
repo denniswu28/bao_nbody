@@ -115,6 +115,10 @@ def run_nbody(pos, vel, N_mesh, L, h, Omega_m,
     pos = pos.copy()
     vel = vel.copy()
 
+    # Convert peculiar velocity v_pec = a*dx/dt to conjugate momentum p = a^2*dx/dt = a*v_pec
+    a_init = 1.0 / (1.0 + z_initial)
+    vel *= a_init
+
     print(f"Running N-body: {n_steps} steps, z={z_initial:.0f} -> z={z_final:.1f}")
     print(f"  N_particles = {pos.shape[1]},  N_mesh = {N_mesh},  L = {L} Mpc/h")
     print(f"  Snapshots at steps: {snap_step_indices}")
@@ -124,29 +128,37 @@ def run_nbody(pos, vel, N_mesh, L, h, Omega_m,
         a = a_steps[step]
         a_next = a_steps[step + 1]
         da = a_next - a
-        dt = da   # time variable is scale factor; prefactors handled in forces
+
+        # Hubble parameter at current a:  H(a) = H0 * E(z)
+        z_curr = 1.0 / a - 1.0
+        H_a = 100.0 * hubble(z_curr, h, Omega_m)  # km/s / (Mpc/h)
 
         # Compute forces at current positions
         f_particles, delta = compute_particle_forces(pos, N_mesh, L, h, Omega_m, a)
 
-        # Half-kick
-        vel += 0.5 * f_particles * dt
+        # Half-kick:  dv/da = g / (a*H)
+        vel += 0.5 * f_particles * da / (a * H_a)
 
-        # Drift
-        pos += vel * dt / a**2   # comoving coordinates: dx/dt = v / a^2
+        # Drift:  dx/da = v / (a^3 * H) — evaluate at midpoint
+        a_mid = 0.5 * (a + a_next)
+        z_mid = 1.0 / a_mid - 1.0
+        H_mid = 100.0 * hubble(z_mid, h, Omega_m)
+        pos += vel * da / (a_mid**3 * H_mid)
 
         # Periodic boundary conditions
         pos = pos % L - L / 2
 
-        # Second half-kick (with forces at new positions)
+        # Second half-kick at a_next
+        z_next = 1.0 / a_next - 1.0
+        H_next = 100.0 * hubble(z_next, h, Omega_m)
         f_particles_new, delta_new = compute_particle_forces(pos, N_mesh, L, h, Omega_m, a_next)
-        vel += 0.5 * f_particles_new * dt
+        vel += 0.5 * f_particles_new * da / (a_next * H_next)
 
         # Save snapshot if requested
         if (step + 1) in snap_step_indices:
             snap = {
                 'pos': pos.copy(),
-                'vel': vel.copy(),
+                'vel': vel.copy() / a_next,  # convert momentum back to peculiar velocity
                 'delta': delta_new.copy(),
                 'a': a_next,
                 'z': 1 / a_next - 1,
