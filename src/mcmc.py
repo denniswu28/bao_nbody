@@ -1,15 +1,3 @@
-"""
-mcmc.py
--------
-Metropolis-Hastings BAO template fitting. Two modes:
-
-  - broadband-marginalized (default): sample (alpha, Sigma); a polynomial
-    broadband is solved analytically at each step.
-  - legacy 3-param: sample (alpha, Sigma, B) with the full damped template.
-
-The sound horizon is recovered as r_s = r_s_fid / alpha.
-"""
-
 import numpy as np
 import os
 import corner

@@ -1,8 +1,3 @@
-"""
-compute and plot the two-point correlation function xi(r) for the
-N-body (pre-recon) and reconstructed (post-recon) density fields.
-shows the BAO bump at r ~ 100-110 Mpc/h.
-"""
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 

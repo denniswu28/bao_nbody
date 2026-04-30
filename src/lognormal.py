@@ -1,11 +1,3 @@
-"""
-lognormal.py
-------------
-Lognormal galaxy mocks: 1+delta_LN = exp(delta_G - sigma_G^2/2).
-Galaxies are Poisson-sampled from nbar*(1+delta_LN). The Gaussian P_G(k)
-is obtained from the target P(k) via xi_G = ln(1+xi).
-"""
-
 import numpy as np
 
 

@@ -1,9 +1,3 @@
-"""
-pm_gravity.py
--------------
-Particle-Mesh gravity solver. CIC paint, FFT Poisson, CIC interpolate to get accelerations on each particle.
-"""
-
 import numpy as np
 
 

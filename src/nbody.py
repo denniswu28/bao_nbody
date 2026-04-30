@@ -1,10 +1,3 @@
-"""
-nbody.py
---------
-Leapfrog (kick-drift-kick) PM N-body integrator. Uses scale factor a as
-the time variable. Saves HDF5 snapshots at specified redshifts.
-"""
-
 import numpy as np
 import os
 import h5py

@@ -1,8 +1,3 @@
-"""
-utils.py
-shared utilities: cosmology helpers, comoving distance, plotting, config loader.
-"""
-
 import numpy as np
 from scipy.integrate import quad
 import yaml
@@ -116,7 +111,6 @@ def make_animation(snapshot_dir, output_fname, L, fps=5):
     import h5py
     import matplotlib
     matplotlib.use('Agg')
-    # tell matplotlib where to find ffmpeg
     try:
         import imageio_ffmpeg
         matplotlib.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()

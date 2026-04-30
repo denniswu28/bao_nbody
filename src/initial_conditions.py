@@ -1,11 +1,3 @@
-"""
-initial_conditions.py
----------------------
-Zel'dovich approximation initial conditions for the N-body sim.
-Particles start on a uniform grid and get displaced by Psi computed
-from a Gaussian random density field with the linear P(k).
-"""
-
 import numpy as np
 from pk_input import power_spectrum, growth_factor
 
@@ -23,7 +15,7 @@ def _k_grids(N, L):
     k1d = np.fft.fftfreq(N, d=1.0 / N) * dk
     kx, ky, kz = np.meshgrid(k1d, k1d, k1d, indexing='ij')
     k2 = kx**2 + ky**2 + kz**2
-    k2[0, 0, 0] = 1.0   # avoid divide by zero at DC
+    k2[0, 0, 0] = 1.0   # avoid divide by zero
     return kx, ky, kz, k2
 
 
@@ -98,7 +90,7 @@ def make_ics(N, L, h, Omega_m, Omega_b, n_s, sigma8,
     pos_grid = make_grid(N, L)
     pos = pos_grid + Psi
 
-    # zel'dovich peculiar velocity (Psi already carries the initial growth factor)
+    # zel'dovich peculiar velocity
     a_init = 1 / (1 + z_initial)
     Hz = hubble(z_initial, h, Omega_m) * 100   # km/s/Mpc
     f = growth_rate(z_initial, Omega_m)

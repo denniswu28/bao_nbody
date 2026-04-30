@@ -1,10 +1,3 @@
-"""
-power_spectrum.py
------------------
-FFT-based P(k) and xi(r) estimators from particle positions.
-Includes CIC window deconvolution and shot-noise subtraction.
-"""
-
 import numpy as np
 
 

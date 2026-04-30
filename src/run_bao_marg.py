@@ -1,7 +1,3 @@
-"""
-run broadband-marginalized MCMC on saved pre-recon and post-recon P(k).
-loads recon_pk.npz and lognormal_covariance.npz from outputs/mcmc/.
-"""
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 

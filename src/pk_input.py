@@ -1,10 +1,3 @@
-"""
-pk_input.py
------------
-Eisenstein & Hu (1998) fitting formulae for the linear matter P(k),
-both the wiggle and no-wiggle versions. Used for ICs and BAO templates.
-"""
-
 import numpy as np
 
 

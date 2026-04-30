@@ -1,9 +1,3 @@
-"""
-main.py
-pipeline orchestrator. stages: ics, nbody, lognormal, pk, recon, mcmc, plots.
-run: python main.py --config ../configs/default.yaml [--stage <stage>]
-"""
-
 import argparse
 import numpy as np
 import os
