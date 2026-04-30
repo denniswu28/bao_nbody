@@ -80,7 +80,6 @@ def estimate_xi(pos, N, L, n_mesh=None, r_max=200.0, n_bins=50):
 
     N_particles = pos.shape[1]
     V = L**3
-    dx = L / n_mesh
     nbar = N_particles / V
 
     from pm_gravity import cic_paint_vectorized
@@ -154,7 +153,6 @@ def xi_from_pk(k, Pk, r_grid):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    from pk_input import power_spectrum
 
     N = 64
     L = 1500.0

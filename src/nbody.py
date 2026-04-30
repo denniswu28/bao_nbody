@@ -11,7 +11,7 @@ import h5py
 from tqdm import tqdm
 
 from pm_gravity import compute_particle_forces
-from initial_conditions import hubble, growth_rate
+from initial_conditions import hubble
 
 
 def scale_factor_steps(z_initial, z_final, n_steps):

@@ -151,7 +151,7 @@ def make_animation(snapshot_dir, output_fname, L, fps=5):
                    cmap='inferno', origin='lower',
                    extent=[-L/2, L/2, -L/2, L/2],
                    vmin=-0.5, vmax=np.log10(1 + vmax_global))
-    cbar = plt.colorbar(im, ax=ax, label=r'$\log_{10}(1 + \delta)$')
+    plt.colorbar(im, ax=ax, label=r'$\log_{10}(1 + \delta)$')
     title = ax.set_title(f'z = {frames[0][1]:.2f}', fontsize=16, fontweight='bold')
     ax.set_xlabel(r'$x$ [Mpc/$h$]', fontsize=12)
     ax.set_ylabel(r'$y$ [Mpc/$h$]', fontsize=12)

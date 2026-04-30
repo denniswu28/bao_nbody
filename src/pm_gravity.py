@@ -108,7 +108,6 @@ def compute_forces(delta, N_mesh, L, h, Omega_m, a):
 
 
 def cic_interpolate(forces, pos, N_mesh, L):
-    N_particles = pos.shape[1]
     dx = L / N_mesh
 
     ijk = (pos + L / 2) / dx

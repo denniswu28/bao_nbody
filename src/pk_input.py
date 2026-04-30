@@ -84,7 +84,6 @@ def transfer_function_nowiggle(k, h, Omega_m, Omega_b):
     k = np.atleast_1d(k) * h
 
     Omega_m_h2 = Omega_m * h**2
-    Omega_b_h2 = Omega_b * h**2
     f_b = Omega_b / Omega_m
 
     alpha_gamma = 1 - 0.328 * np.log(431 * Omega_m_h2) * f_b \

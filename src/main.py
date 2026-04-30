@@ -268,8 +268,8 @@ def stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out):
     os.makedirs(out['figure_dir'], exist_ok=True)
 
     # 1. density field slices
-    fig = plot_density_slices(snapshots, box['L'],
-                               fname=os.path.join(out['figure_dir'], 'density_slices.png'))
+    plot_density_slices(snapshots, box['L'],
+                        fname=os.path.join(out['figure_dir'], 'density_slices.png'))
     print("  Saved: density_slices.png")
 
     # 2. P(k) evolution
@@ -342,7 +342,7 @@ def main():
         pos_recon = stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out)
 
     if stage in ('all', 'mcmc'):
-        chains = stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out)
+        stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out)
 
     if stage in ('all', 'plots'):
         stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out)
