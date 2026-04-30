@@ -14,18 +14,20 @@ import numpy as np
 
 def sound_horizon(h, Omega_m, Omega_b):
     """
-    Compute the BAO sound horizon scale r_s in Mpc (comoving).
+    Compute the BAO sound horizon scale r_s in Mpc/h (comoving).
     Eisenstein & Hu (1998) eq. 26 fitting formula.
-    Returns ~150 Mpc for Planck cosmology.
-    To convert to Mpc/h: multiply by h  (r_s_hunit = r_s * h ≈ 101 Mpc/h).
+
+    The EH98 formula itself returns r_s in Mpc (~150 Mpc for Planck);
+    we multiply by h here so that the returned value is in Mpc/h, matching
+    the rest of the pipeline. Planck cosmology: r_s ~ 101 Mpc/h.
     """
     Omega_m_h2 = Omega_m * h**2
     Omega_b_h2 = Omega_b * h**2
 
-    r_s = 44.5 * np.log(9.83 / Omega_m_h2) \
-          / np.sqrt(1 + 10 * Omega_b_h2**0.75)   # Mpc/h
+    r_s_Mpc = 44.5 * np.log(9.83 / Omega_m_h2) \
+              / np.sqrt(1 + 10 * Omega_b_h2**0.75)   # Mpc
 
-    return r_s
+    return r_s_Mpc * h    # Mpc/h
 
 
 def transfer_function_eh(k, h, Omega_m, Omega_b):
@@ -119,7 +121,8 @@ def transfer_function_nowiggle(k, h, Omega_m, Omega_b):
     alpha_gamma = 1 - 0.328 * np.log(431 * Omega_m_h2) * f_b \
                   + 0.38 * np.log(22.3 * Omega_m_h2) * f_b**2
 
-    s = sound_horizon(h, Omega_m, Omega_b)  # Mpc (same unit as 1/k_eq)
+    # sound_horizon() returns Mpc/h; EH98 eq. 30 uses s in Mpc (k here is in Mpc^-1)
+    s = sound_horizon(h, Omega_m, Omega_b) / h   # Mpc
     gamma_eff = Omega_m * h * (alpha_gamma + (1 - alpha_gamma) / (1 + (0.43 * k * s)**4))
 
     q = k * (2.725 / 2.7)**2 / (gamma_eff)

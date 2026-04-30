@@ -199,11 +199,27 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
         print(f"  Loaded covariance: {cov_full.shape} from {N_mocks} mocks")
 
     def _match_cov(k_data, k_cov, cov_full, N_mocks):
-        """Select sub-matrix of cov matching k_data bins, return (cov, hartlap)."""
+        """Select sub-matrix of cov matching k_data bins, return (cov, hartlap).
+
+        Uses nearest-neighbor index selection but refuses to duplicate a
+        covariance row (which would make cov_sub singular).  Raises if the
+        data k-binning is finer than the mock k-binning.
+        """
         idx = np.array([np.argmin(np.abs(k_cov - ki)) for ki in k_data])
+        if len(np.unique(idx)) != len(idx):
+            raise ValueError(
+                f"Data k-binning ({len(k_data)} bins) is finer than "
+                f"covariance k-binning ({len(k_cov)} bins); "
+                "rebin the data or regenerate the covariance on a matching grid."
+            )
         cov_sub = cov_full[np.ix_(idx, idx)]
         hartlap = (N_mocks - len(k_data) - 2) / (N_mocks - 1)
-        return cov_sub, max(hartlap, 0.1)
+        if hartlap <= 0:
+            raise ValueError(
+                f"Hartlap factor non-positive: N_mocks={N_mocks}, "
+                f"N_bins={len(k_data)}.  Need N_mocks > N_bins + 2."
+            )
+        return cov_sub, hartlap
 
     # Fit N-body final snapshot (z=0)
     pk_final = pk_results['nbody'][-1]

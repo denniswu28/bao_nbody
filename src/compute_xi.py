@@ -45,7 +45,7 @@ r_theory = np.linspace(1, R_MAX, 500)
 xi_w  = xi_from_pk(k_th, Pk_w, r_theory)
 xi_nw = xi_from_pk(k_th, Pk_nw, r_theory)
 
-rs_fid = sound_horizon(cosmo['h'], cosmo['Omega_m'], cosmo['Omega_b']) * cosmo['h']  # Mpc → Mpc/h
+rs_fid = sound_horizon(cosmo['h'], cosmo['Omega_m'], cosmo['Omega_b'])  # Mpc/h
 print(f"  r_s = {rs_fid:.2f} Mpc/h")
 
 # ---- N-body xi(r) at z=0 (pre-recon) via FFT ----
@@ -124,9 +124,14 @@ print(f"\n  BAO signal (peak-trough in r²Δξ): {bao_amplitude:.1f} (Mpc/h)²")
 print(f"  N-body noise σ(r²ξ) at BAO scales: {noise:.1f} (Mpc/h)²")
 print(f"  SNR = {snr:.2f}")
 
-# Mock-averaged SNR
-noise_mock = np.std(r_mock[m_mock_bao]**2 * (xi_mock_std[m_mock_bao] / np.sqrt(N_MOCKS)))
+# Mock-averaged SNR.
+# The noise on the mean of N_MOCKS independent realizations is
+# sigma_mean(r) = xi_std(r) / sqrt(N_MOCKS).  Average r^2 * sigma_mean
+# across the BAO bins to get a representative noise amplitude.
+sigma_mean = xi_mock_std[m_mock_bao] / np.sqrt(N_MOCKS)
+noise_mock = np.mean(r_mock[m_mock_bao]**2 * sigma_mean)
 snr_mock = bao_amplitude / (2 * noise_mock) if noise_mock > 0 else 0
+print(f"  Mock-averaged xi noise ~ {noise_mock:.1f} (Mpc/h)^2")
 print(f"  Mock-averaged xi SNR ~ {snr_mock:.1f}")
 
 # ---- Plot ----

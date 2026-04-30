@@ -73,16 +73,17 @@ def estimate_pk(pos, N, L, n_mesh=None, subtract_shotnoise=True):
 
     # Power |delta_k|^2 * V, corrected for CIC window (per-axis)
     # W_CIC(k) = prod sinc^2(k_i * dx/2);  divide by |W_CIC|^2 = W_CIC^2
+    # IMPORTANT: subtract (flat) shot noise BEFORE dividing by the CIC window,
+    # otherwise the shot-noise floor gets inflated by 1/W^2 at high k.
     Pk_raw = np.abs(delta_k)**2 * V
+    if subtract_shotnoise:
+        Pk_raw -= 1.0 / nbar
+
     W_cic = (cic_window_correction_1d(kx, dx)
              * cic_window_correction_1d(ky, dx)
              * cic_window_correction_1d(kz, dx))
     W_cic[0, 0, 0] = 1.0
     Pk_raw /= W_cic**2
-
-    # Subtract shot noise
-    if subtract_shotnoise:
-        Pk_raw -= 1.0 / nbar
 
     # Bin in spherical shells (vectorized)
     k_nyq = np.pi / dx
@@ -209,12 +210,12 @@ def _xi_from_delta_grid(delta, L, n_mesh, nbar, r_max, n_bins):
              * cic_window_correction_1d(kz, dx))
     W_cic[0, 0, 0] = 1.0
 
-    # Power on the full grid, CIC-corrected
-    Pk_grid = np.abs(delta_k)**2 / n_mesh**6 / W_cic**2
-
-    # Subtract shot noise (constant in k-space)
+    # Power on the full grid.
+    # Subtract (flat) shot noise BEFORE CIC deconvolution (see estimate_pk).
+    Pk_grid = np.abs(delta_k)**2 / n_mesh**6
     if nbar is not None:
         Pk_grid -= 1.0 / (nbar * V)
+    Pk_grid /= W_cic**2
 
     # IFFT → xi(r):
     #   Pk_grid = |FFT(δ)|² / N^6 / W² = P(k) / V

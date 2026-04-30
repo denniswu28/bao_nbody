@@ -97,6 +97,7 @@ chain_pre, rs_pre = fit_bao(
     label='pre_recon_marg', output_dir=out_dir,
     cov=cov_pre, hartlap_factor=hartlap_pre,
     broadband_marginalize=True,
+    poly_powers=(-1, 0, 1),
 )
 
 # ---- Post-recon fit ----
@@ -111,6 +112,7 @@ chain_rec, rs_rec = fit_bao(
     label='post_recon_marg', output_dir=out_dir,
     cov=cov_rec, hartlap_factor=hartlap_rec,
     broadband_marginalize=True,
+    poly_powers=(-1, 0, 1),
 )
 
 # ---- Summary ----
