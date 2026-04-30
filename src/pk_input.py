@@ -1,60 +1,33 @@
 """
 pk_input.py
 -----------
-Eisenstein & Hu (1998) fitting formulae for the matter power spectrum P(k),
-including the BAO wiggle spectrum and the smooth no-wiggle reference spectrum.
-
-References:
-    Eisenstein & Hu (1998), ApJ, 496, 605
-    https://arxiv.org/abs/astro-ph/9709066
+Eisenstein & Hu (1998) fitting formulae for the linear matter P(k),
+both the wiggle and no-wiggle versions. Used for ICs and BAO templates.
 """
 
 import numpy as np
 
 
 def sound_horizon(h, Omega_m, Omega_b):
-    """
-    Compute the BAO sound horizon scale r_s in Mpc/h (comoving).
-    Eisenstein & Hu (1998) eq. 26 fitting formula.
-
-    The EH98 formula itself returns r_s in Mpc (~150 Mpc for Planck);
-    we multiply by h here so that the returned value is in Mpc/h, matching
-    the rest of the pipeline. Planck cosmology: r_s ~ 101 Mpc/h.
-    """
+    # eh98 eq. 26 fitting formula. returns r_s in Mpc/h.
     Omega_m_h2 = Omega_m * h**2
     Omega_b_h2 = Omega_b * h**2
 
     r_s_Mpc = 44.5 * np.log(9.83 / Omega_m_h2) \
-              / np.sqrt(1 + 10 * Omega_b_h2**0.75)   # Mpc
+              / np.sqrt(1 + 10 * Omega_b_h2**0.75)
 
-    return r_s_Mpc * h    # Mpc/h
+    return r_s_Mpc * h
 
 
 def transfer_function_eh(k, h, Omega_m, Omega_b):
-    """
-    Full Eisenstein & Hu (1998) transfer function with BAO wiggles.
-
-    Parameters
-    ----------
-    k : array_like
-        Wavenumbers in h/Mpc.
-    h, Omega_m, Omega_b : float
-        Cosmological parameters.
-
-    Returns
-    -------
-    T : ndarray
-        Transfer function T(k), dimensionless.
-    """
-    k = np.atleast_1d(k) * h   # convert h/Mpc → Mpc⁻¹ for internal EH98 formulae
+    k = np.atleast_1d(k) * h   # h/Mpc -> Mpc^-1 for EH98 internals
 
     Omega_m_h2 = Omega_m * h**2
     Omega_b_h2 = Omega_b * h**2
-    f_b = Omega_b / Omega_m    # baryon fraction
+    f_b = Omega_b / Omega_m
 
-    # Redshifts
     z_eq = 2.5e4 * Omega_m_h2 * (2.725 / 2.7)**(-4)
-    k_eq = 7.46e-2 * Omega_m_h2 * (2.725 / 2.7)**(-2)   # Mpc⁻¹
+    k_eq = 7.46e-2 * Omega_m_h2 * (2.725 / 2.7)**(-2)
 
     b1 = 0.313 * Omega_m_h2**(-0.419) * (1 + 0.607 * Omega_m_h2**0.674)
     b2 = 0.238 * Omega_m_h2**0.223
@@ -68,9 +41,9 @@ def transfer_function_eh(k, h, Omega_m, Omega_b):
         * np.log((np.sqrt(1 + R_drag) + np.sqrt(R_drag + R_eq)) / (1 + np.sqrt(R_eq)))
 
     k_silk = 1.6 * Omega_b_h2**0.52 * Omega_m_h2**0.01 \
-             * (1 + (11.25 * Omega_b_h2)**(-0.824))   # Silk damping
+             * (1 + (11.25 * Omega_b_h2)**(-0.824))
 
-    # CDM transfer function
+    # cdm piece
     a1 = (46.9 * Omega_m_h2)**0.670 * (1 + (32.1 * Omega_m_h2)**(-0.532))
     a2 = (12.0 * Omega_m_h2)**0.424 * (1 + (45.0 * Omega_m_h2)**(-0.582))
     alpha_c = a1**(-f_b) * a2**(-f_b**3)
@@ -87,7 +60,7 @@ def transfer_function_eh(k, h, Omega_m, Omega_b):
     f = 1 / (1 + (k * s / 5.4)**4)
     T_c = f * T_tilde(k, 1, beta_c) + (1 - f) * T_tilde(k, alpha_c, 1)
 
-    # Baryon transfer function
+    # baryon piece
     y = z_eq / (1 + z_drag)
     G = y * (-6 * np.sqrt(1 + y) + (2 + 3 * y) * np.log((np.sqrt(1 + y) + 1) / (np.sqrt(1 + y) - 1)))
 
@@ -98,7 +71,7 @@ def transfer_function_eh(k, h, Omega_m, Omega_b):
 
     s_tilde = s / (1 + (beta_node / (k * s))**3)**(1/3)
 
-    j0 = np.sinc(k * s_tilde / np.pi)    # np.sinc uses normalized sinc
+    j0 = np.sinc(k * s_tilde / np.pi)   # numpy sinc is normalized
     T_b = (T_tilde(k, 1, 1) / (1 + (k * s / 5.2)**2)
            + alpha_b / (1 + (beta_b / (k * s))**3) * np.exp(-(k / k_silk)**1.4)) * j0
 
@@ -108,11 +81,7 @@ def transfer_function_eh(k, h, Omega_m, Omega_b):
 
 
 def transfer_function_nowiggle(k, h, Omega_m, Omega_b):
-    """
-    Eisenstein & Hu (1998) smooth no-wiggle transfer function.
-    Used as the broad-band reference in BAO template fitting.
-    """
-    k = np.atleast_1d(k) * h   # convert h/Mpc → Mpc⁻¹ for internal EH98 formulae
+    k = np.atleast_1d(k) * h
 
     Omega_m_h2 = Omega_m * h**2
     Omega_b_h2 = Omega_b * h**2
@@ -121,8 +90,8 @@ def transfer_function_nowiggle(k, h, Omega_m, Omega_b):
     alpha_gamma = 1 - 0.328 * np.log(431 * Omega_m_h2) * f_b \
                   + 0.38 * np.log(22.3 * Omega_m_h2) * f_b**2
 
-    # sound_horizon() returns Mpc/h; EH98 eq. 30 uses s in Mpc (k here is in Mpc^-1)
-    s = sound_horizon(h, Omega_m, Omega_b) / h   # Mpc
+    # eh98 eq. 30 fitting formula
+    s = sound_horizon(h, Omega_m, Omega_b) / h
     gamma_eff = Omega_m * h * (alpha_gamma + (1 - alpha_gamma) / (1 + (0.43 * k * s)**4))
 
     q = k * (2.725 / 2.7)**2 / (gamma_eff)
@@ -134,26 +103,7 @@ def transfer_function_nowiggle(k, h, Omega_m, Omega_b):
 
 
 def power_spectrum(k, h, Omega_m, Omega_b, n_s, sigma8, z=0.0, wiggle=True):
-    """
-    Full matter power spectrum P(k) using Eisenstein-Hu transfer function.
-
-    P(k) = A * k^n_s * T(k)^2
-
-    Normalized to sigma8 at z=0, then scaled by the linear growth factor D(z)^2.
-
-    Parameters
-    ----------
-    k : array_like
-        Wavenumbers in h/Mpc.
-    wiggle : bool
-        If True, use the full transfer function with BAO wiggles.
-        If False, use the smooth no-wiggle transfer function.
-
-    Returns
-    -------
-    Pk : ndarray
-        Power spectrum in (Mpc/h)^3.
-    """
+    # build power spectrum, normalize to sigma8, then redshift scale by growth factor
     k = np.atleast_1d(k)
 
     if wiggle:
@@ -163,12 +113,10 @@ def power_spectrum(k, h, Omega_m, Omega_b, n_s, sigma8, z=0.0, wiggle=True):
 
     Pk_unnorm = k**n_s * T**2
 
-    # Normalize to sigma8 (uses internal k array for robust integration)
     sigma8_unnorm = _compute_sigma8(None, h, Omega_m, Omega_b, n_s, wiggle=wiggle)
     A = (sigma8 / sigma8_unnorm)**2
     Pk = A * Pk_unnorm
 
-    # Apply growth factor
     Dz = growth_factor(z, Omega_m)
     Pk *= Dz**2
 
@@ -176,11 +124,7 @@ def power_spectrum(k, h, Omega_m, Omega_b, n_s, sigma8, z=0.0, wiggle=True):
 
 
 def growth_factor(z, Omega_m, Omega_lambda=None):
-    """
-    Linear growth factor D(z) normalized to 1 at z=0.
-    Carroll, Press & Turner (1992) approximation.
-    At high z (matter dominated): D(z) ~ a = 1/(1+z).
-    """
+    # carroll-press-turner 1992 fit, normalized so D(0) = 1
     if Omega_lambda is None:
         Omega_lambda = 1 - Omega_m
 
@@ -196,12 +140,8 @@ def growth_factor(z, Omega_m, Omega_lambda=None):
 
 
 def _compute_sigma8(Pk_unnorm_func, h, Omega_m, Omega_b, n_s, wiggle=True):
-    """
-    Compute sigma8 for normalization using a top-hat window of R=8 Mpc/h.
-
-    Uses an internal well-sampled k array so this works regardless of
-    what k values the caller passes.
-    """
+    # top-hat variance at R=8 Mpc/h. always integrate on a well-sampled k grid
+    # (caller may pass non-uniform k from an FFT mesh).
     k_int = np.logspace(-4, 2, 2000)
 
     if wiggle:
@@ -211,7 +151,7 @@ def _compute_sigma8(Pk_unnorm_func, h, Omega_m, Omega_b, n_s, wiggle=True):
 
     Pk_unnorm = k_int**n_s * T**2
 
-    R = 8.0  # Mpc/h
+    R = 8.0
     x = k_int * R
     W = 3 * (np.sin(x) - x * np.cos(x)) / x**3
     W[x < 1e-3] = 1.0

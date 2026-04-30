@@ -1,20 +1,7 @@
 """
 main.py
--------
-Pipeline orchestrator for the BAO N-body project.
-
-Stages:
-    ics       - Generate Zel'dovich initial conditions
-    nbody     - Run PM N-body simulation
-    lognormal - Generate lognormal catalog
-    pk        - Measure P(k) from all snapshots
-    recon     - Run BAO reconstruction (via pyrecon)
-    mcmc      - Fit BAO template and recover r_s
-    plots     - Make all summary figures
-
-Usage:
-    python main.py --config configs/default.yaml
-    python main.py --config configs/default.yaml --stage nbody
+pipeline orchestrator. stages: ics, nbody, lognormal, pk, recon, mcmc, plots.
+run: python main.py --config ../configs/default.yaml [--stage <stage>]
 """
 
 import argparse
@@ -106,7 +93,7 @@ def stage_pk(snapshots, pos_ln, cfg, cosmo, box, gal, out):
     print(f"  Lognormal: {len(k)} k-bins, "
           f"P(k=0.1) = {np.interp(0.1, k, Pk):.1f} (Mpc/h)^3")
 
-    # Theory
+    # theory P(k)
     k_th = np.logspace(-3, 0, 500)
     results['theory'] = {
         'k': k_th,
@@ -119,11 +106,7 @@ def stage_pk(snapshots, pos_ln, cfg, cosmo, box, gal, out):
 
 
 def stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out):
-    """
-    BAO reconstruction using pyrecon (IterativeFFT, Burden et al. 2015).
-    Returns the D-R reconstructed P(k) via CIC painting of displaced
-    data minus displaced randoms.
-    """
+    # BAO reconstruction with pyrecon (iterative FFT). returns D-R density.
     print("\n" + "="*60)
     print("STAGE: BAO Reconstruction (pyrecon)")
     print("="*60)
@@ -137,8 +120,8 @@ def stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out):
 
     L = box['L']
     N_mesh = box['N_mesh']
-    f = cosmo['Omega_m']**0.55   # growth rate at z=0 (approximate)
-    bias = 1.0  # dark matter particles, not galaxies
+    f = cosmo['Omega_m']**0.55   # growth rate at z=0
+    bias = 1.0  # dark matter, not galaxies
     smoothing = 15.0  # Mpc/h
 
     Npart = pos_nbody_z0.shape[1]
@@ -146,8 +129,8 @@ def stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out):
     rng = np.random.default_rng(99)
     pos_rand = rng.uniform(0, L, (Nrand, 3))
 
-    # Positions are in [-L/2, L/2]; shift to [0, L] for pyrecon
-    pos_data = (pos_nbody_z0 + L / 2).T  # (N, 3) for pyrecon
+    # positions are in [-L/2, L/2]; pyrecon wants [0, L]
+    pos_data = (pos_nbody_z0 + L / 2).T  # (N, 3)
 
     print(f"  f = {f:.4f}, bias = {bias}, smoothing = {smoothing} Mpc/h")
     print(f"  N_particles = {Npart}, N_randoms = {Nrand}")
@@ -155,23 +138,23 @@ def stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out):
     recon = IterativeFFTReconstruction(
         f=f, bias=bias,
         nmesh=N_mesh, boxsize=L, boxcenter=L/2,
-        wrap=True,  # periodic box
+        wrap=True,
     )
     recon.assign_data(pos_data)
     recon.assign_randoms(pos_rand)
     recon.set_density_contrast(smoothing_radius=smoothing)
     recon.run()
 
-    # Get displaced data and randoms
+    # displaced data and randoms
     pos_data_s = recon.read_shifted_positions(pos_data, field='disp')
     pos_rand_s = recon.read_shifted_positions(pos_rand, field='disp')
 
-    # Convert to (3, N) in [-L/2, L/2] with periodic wrapping
+    # back to (3, N) in [-L/2, L/2] with periodic wrap
     from pm_gravity import cic_paint_vectorized
     pos_data_cic = (pos_data_s.T - L/2) % L - L/2
     pos_rand_cic = (pos_rand_s.T - L/2) % L - L/2
 
-    # D-R: paint both and subtract overdensities
+    # D-R reconstructed density
     delta_D = cic_paint_vectorized(pos_data_cic, N_mesh, L)
     delta_R = cic_paint_vectorized(pos_rand_cic, N_mesh, L)
     delta_rec = delta_D - delta_R
@@ -188,7 +171,7 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
     mcmc_cfg = cfg['mcmc']
     chains = {}
 
-    # Try to load lognormal covariance if available
+    # try to load lognormal covariance if available
     cov_path = os.path.join(out['mcmc_dir'], 'lognormal_covariance.npz')
     cov_data, cov_full, k_cov, N_mocks = None, None, None, 100
     if os.path.exists(cov_path):
@@ -199,12 +182,7 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
         print(f"  Loaded covariance: {cov_full.shape} from {N_mocks} mocks")
 
     def _match_cov(k_data, k_cov, cov_full, N_mocks):
-        """Select sub-matrix of cov matching k_data bins, return (cov, hartlap).
-
-        Uses nearest-neighbor index selection but refuses to duplicate a
-        covariance row (which would make cov_sub singular).  Raises if the
-        data k-binning is finer than the mock k-binning.
-        """
+        # nearest-neighbor index match; refuse if data binning is finer than cov
         idx = np.array([np.argmin(np.abs(k_cov - ki)) for ki in k_data])
         if len(np.unique(idx)) != len(idx):
             raise ValueError(
@@ -221,7 +199,7 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
             )
         return cov_sub, hartlap
 
-    # Fit N-body final snapshot (z=0)
+    # fit N-body final snapshot (z=0)
     pk_final = pk_results['nbody'][-1]
     mask = (pk_final['k'] > 0.02) & (pk_final['k'] < 0.3)
     cov_sub, hartlap = (None, 1.0)
@@ -238,7 +216,7 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
     chains['nbody_z0'] = {'chain': chain, 'r_s': r_s}
     print(f"  N-body z=0: r_s = {r_s:.2f} Mpc/h")
 
-    # Fit lognormal catalog
+    # fit lognormal catalog
     pk_ln = pk_results['lognormal']
     mask = (pk_ln['k'] > 0.02) & (pk_ln['k'] < 0.3)
     cov_sub, hartlap = (None, 1.0)
@@ -255,7 +233,7 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
     chains['lognormal'] = {'chain': chain, 'r_s': r_s}
     print(f"  Lognormal: r_s = {r_s:.2f} Mpc/h")
 
-    # Fit reconstructed catalog (if available)
+    # fit reconstructed catalog if available
     if pos_recon is not None:
         from power_spectrum import estimate_pk
         from utils import pk_error_gaussian
@@ -289,7 +267,7 @@ def stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out):
 
     os.makedirs(out['figure_dir'], exist_ok=True)
 
-    # 1. Density field slices
+    # 1. density field slices
     fig = plot_density_slices(snapshots, box['L'],
                                fname=os.path.join(out['figure_dir'], 'density_slices.png'))
     print("  Saved: density_slices.png")
@@ -312,7 +290,7 @@ def stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out):
                         fname=os.path.join(out['figure_dir'], 'pk_evolution.png'))
     print("  Saved: pk_evolution.png")
 
-    # 3. Density evolution animation
+    # 3. density evolution animation
     if out.get('make_animation', True):
         make_animation(out['snapshot_dir'],
                        os.path.join(out['figure_dir'], 'density_evolution.mp4'),

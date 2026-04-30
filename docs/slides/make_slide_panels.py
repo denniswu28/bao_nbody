@@ -1,12 +1,7 @@
 """
-Split the 4-panel pipeline_summary figure into 4 standalone plots
-for the slide deck. No titles, large fonts, high DPI.
-
-Outputs (into outputs/figures/):
-  panel_density.png   -- density field z=early vs z=0
-  panel_pk.png        -- P(k) pre-recon / post-recon / linear
-  panel_wiggles.png   -- P(k) / P_nw ratio
-  panel_alpha.png     -- MCMC posterior on the ruler alpha
+split the 4-panel pipeline summary into 4 standalone slide plots.
+outputs into outputs/figures/: panel_density.png, panel_pk.png,
+panel_wiggles.png, panel_alpha.png.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
@@ -32,7 +27,7 @@ mcmc_dir = os.path.join(root, 'outputs', 'mcmc')
 fig_dir  = os.path.join(root, 'outputs', 'figures')
 os.makedirs(fig_dir, exist_ok=True)
 
-# Larger default fonts for slide legibility
+# bigger default fonts so the slides are legible
 plt.rcParams.update({
     'font.size':        16,
     'axes.labelsize':   18,
@@ -48,9 +43,7 @@ plt.rcParams.update({
 
 DPI = 250
 
-# =====================================================================
-# Panel 1: density field z = early vs z = 0
-# =====================================================================
+# panel 1: density field z = early vs z = 0
 snap_files = sorted([f for f in os.listdir(snap_dir) if f.endswith('.h5')])
 snap_first, snap_last = snap_files[0], snap_files[-1]
 with h5py.File(os.path.join(snap_dir, snap_first), 'r') as f:
@@ -86,9 +79,7 @@ fig.savefig(os.path.join(fig_dir, 'panel_density.png'),
             dpi=DPI, bbox_inches='tight')
 plt.close(fig)
 
-# =====================================================================
-# Panel 2: P(k)
-# =====================================================================
+# panel 2: P(k)
 recon = np.load(os.path.join(mcmc_dir, 'recon_pk.npz'))
 k_pre, Pk_pre = recon['k_pre'], recon['Pk_pre']
 k_rec, Pk_rec = recon['k_rec'], recon['Pk_rec']
@@ -113,9 +104,7 @@ fig.savefig(os.path.join(fig_dir, 'panel_pk.png'),
             dpi=DPI, bbox_inches='tight')
 plt.close(fig)
 
-# =====================================================================
-# Panel 3: wiggle ratio
-# =====================================================================
+# panel 3: wiggle ratio
 Pnw_f = interp1d(k_th, Pk_nw, bounds_error=False, fill_value='extrapolate')
 Pw_f  = interp1d(k_th, Pk_w,  bounds_error=False, fill_value='extrapolate')
 
@@ -158,9 +147,7 @@ fig.savefig(os.path.join(fig_dir, 'panel_wiggles.png'),
             dpi=DPI, bbox_inches='tight')
 plt.close(fig)
 
-# =====================================================================
-# Panel 4: alpha posterior
-# =====================================================================
+# panel 4: alpha posterior
 marg = np.load(os.path.join(mcmc_dir, 'marg_mcmc_results.npz'))
 chain_pre = marg['chain_pre']
 chain_rec = marg['chain_rec']

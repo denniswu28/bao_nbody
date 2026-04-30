@@ -1,8 +1,7 @@
 """
-Compute and plot the two-point correlation function xi(r) from
+compute and plot the two-point correlation function xi(r) for the
 N-body (pre-recon) and reconstructed (post-recon) density fields.
-
-Shows the BAO bump at r ~ 100-110 Mpc/h in configuration space.
+shows the BAO bump at r ~ 100-110 Mpc/h.
 """
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
@@ -33,7 +32,7 @@ N_mesh = box['N_mesh']
 XI_BINS = 60
 R_MAX = 200.0
 
-# ---- Theory xi(r) via Hankel of analytic P(k) ----
+# theory xi(r) via Hankel of analytic P(k)
 print("Computing theory xi(r) ...")
 k_th = np.logspace(-4, 1, 10000)
 Pk_w  = power_spectrum(k_th, cosmo['h'], cosmo['Omega_m'], cosmo['Omega_b'],
@@ -48,7 +47,7 @@ xi_nw = xi_from_pk(k_th, Pk_nw, r_theory)
 rs_fid = sound_horizon(cosmo['h'], cosmo['Omega_m'], cosmo['Omega_b'])  # Mpc/h
 print(f"  r_s = {rs_fid:.2f} Mpc/h")
 
-# ---- N-body xi(r) at z=0 (pre-recon) via FFT ----
+# N-body xi(r) at z=0 (pre-recon) via FFT
 print("Computing xi(r) from N-body z=0 snapshot ...")
 snap_file = os.path.join(snap_dir, 'snap_0050_z0.00.h5')
 with h5py.File(snap_file, 'r') as f:
@@ -58,7 +57,7 @@ r_pre, xi_pre, np_pre = estimate_xi(pos_nb, N, L, n_mesh=N_mesh,
                                      r_max=R_MAX, n_bins=XI_BINS)
 print(f"  Done: {len(r_pre)} bins, xi(100)={np.interp(100, r_pre, xi_pre):.4f}")
 
-# ---- Mock-averaged xi(r) from 100 lognormal mocks ----
+# mock-averaged xi(r) from 100 lognormal mocks
 gal = cfg['galaxy']
 N_MOCKS = 100
 print(f"\nAveraging xi(r) from {N_MOCKS} lognormal mocks ...")
@@ -69,12 +68,12 @@ r_mock, xi_mock_mean, xi_mock_std, xi_mock_all = generate_mock_xi(
     nbar=gal['nbar'], b=gal['b'], z=cosmo['z_eff'],
     seed_start=2000, r_max=R_MAX, n_bins=XI_BINS)
 
-# SNR of mock-averaged curve (computed after BAO amplitude is known)
+# SNR of mock-averaged curve (computed below once BAO amplitude is known)
 m_mock_bao = (r_mock > 80) & (r_mock < 160)
 noise_mock_per_bin = np.mean(xi_mock_std[m_mock_bao]) * np.mean(r_mock[m_mock_bao]**2)
 print(f"  Mock-average noise per bin ~ {noise_mock_per_bin:.1f} (Mpc/h)^2")
 
-# ---- Post-recon xi(r) via FFT of D-R density field ----
+# post-recon xi(r) via FFT of D-R density field
 print("Running reconstruction to get delta_rec ...")
 from pyrecon import IterativeFFTReconstruction
 from pm_gravity import cic_paint_vectorized
@@ -112,7 +111,6 @@ r_rec, xi_rec, np_rec = estimate_xi_from_delta(delta_rec, L, nbar=None,
                                                 r_max=R_MAX, n_bins=XI_BINS)
 print(f"  Done: {len(r_rec)} bins, xi(100)={np.interp(100, r_rec, xi_rec):.4f}")
 
-# ---- Compute BAO SNR ----
 xi_diff_th = xi_w - xi_nw
 m_bao = (r_theory > 80) & (r_theory < 160)
 bao_amplitude = np.max(r_theory[m_bao]**2 * xi_diff_th[m_bao]) - \
@@ -124,24 +122,21 @@ print(f"\n  BAO signal (peak-trough in r²Δξ): {bao_amplitude:.1f} (Mpc/h)²")
 print(f"  N-body noise σ(r²ξ) at BAO scales: {noise:.1f} (Mpc/h)²")
 print(f"  SNR = {snr:.2f}")
 
-# Mock-averaged SNR.
-# The noise on the mean of N_MOCKS independent realizations is
-# sigma_mean(r) = xi_std(r) / sqrt(N_MOCKS).  Average r^2 * sigma_mean
-# across the BAO bins to get a representative noise amplitude.
+# mock-averaged SNR: noise on the mean shrinks by sqrt(N_MOCKS) versus a single mock
 sigma_mean = xi_mock_std[m_mock_bao] / np.sqrt(N_MOCKS)
 noise_mock = np.mean(r_mock[m_mock_bao]**2 * sigma_mean)
 snr_mock = bao_amplitude / (2 * noise_mock) if noise_mock > 0 else 0
 print(f"  Mock-averaged xi noise ~ {noise_mock:.1f} (Mpc/h)^2")
 print(f"  Mock-averaged xi SNR ~ {snr_mock:.1f}")
 
-# ---- Plot ----
+# plots
 fig, axes = plt.subplots(2, 1, figsize=(9, 8), sharex=True,
                          gridspec_kw={'height_ratios': [3, 1.2], 'hspace': 0.08})
 
 R_MIN_PLOT = 50
 
 ax = axes[0]
-# Theory
+# theory
 ax.plot(r_theory, r_theory**2 * xi_w, 'k-', lw=2, alpha=0.7,
         label='Linear theory (wiggles)')
 ax.plot(r_theory, r_theory**2 * xi_nw, 'k--', lw=1.5, alpha=0.5,
@@ -152,7 +147,7 @@ m_pre = r_pre >= R_MIN_PLOT
 ax.plot(r_pre[m_pre], r_pre[m_pre]**2 * xi_pre[m_pre], 'C0o-', ms=4, lw=1,
         alpha=0.8, label=f'N-body $z=0$ ($N={N}^3$)')
 
-# Mock-averaged (100 lognormal mocks)
+# mock-averaged (100 lognormal mocks)
 m_mock = r_mock >= R_MIN_PLOT
 xi_mean_err = xi_mock_std / np.sqrt(N_MOCKS)
 ax.fill_between(r_mock[m_mock],
@@ -163,12 +158,12 @@ ax.plot(r_mock[m_mock], r_mock[m_mock]**2 * xi_mock_mean[m_mock],
         'C2D-', ms=3, lw=1.2, alpha=0.9,
         label=f'Mean of {N_MOCKS} lognormal mocks')
 
-# Galaxy-bias theory for reference
+# galaxy-bias theory for reference
 gal_b = gal['b']
 ax.plot(r_theory, r_theory**2 * gal_b**2 * xi_w, 'C2--', lw=1, alpha=0.4,
         label=f'$b^2$ theory ($b={gal_b}$)')
 
-# Post-recon (FFT of D-R field)
+# post-recon (FFT of D-R field)
 m_rec = r_rec >= R_MIN_PLOT
 ax.plot(r_rec[m_rec], r_rec[m_rec]**2 * xi_rec[m_rec], 'C3s-', ms=4, lw=1,
         alpha=0.8, label='Post-recon (D$-$R)')
@@ -177,7 +172,7 @@ ax.axvline(rs_fid, color='gray', ls=':', alpha=0.5,
            label=f'$r_s$ = {rs_fid:.0f} Mpc/$h$')
 ax.axhline(0, color='gray', lw=0.5, alpha=0.3)
 
-# Annotate SNR
+# annotate SNR
 ax.text(0.03, 0.05,
         f'Single N-body SNR = {snr:.1f}\n'
         f'Mock-avg SNR ~ {snr_mock:.1f} ({N_MOCKS} mocks)\n'
@@ -192,13 +187,13 @@ ax.grid(True, alpha=0.2)
 ax.set_title('Correlation Function: BAO Bump in Configuration Space', fontsize=13)
 ax.set_xlim(R_MIN_PLOT, R_MAX)
 
-# Lower panel: wiggle-only component (theory) + measured residuals
+# lower panel: wiggle-only component (theory) + measured residuals
 ax2 = axes[1]
 ax2.fill_between(r_theory, r_theory**2 * xi_diff_th, 0,
                  color='gray', alpha=0.2, label='Theory BAO feature')
 ax2.plot(r_theory, r_theory**2 * xi_diff_th, 'k-', lw=1.5, alpha=0.6)
 
-# Measured: subtract smooth spline to extract oscillatory residual
+# measured: subtract a smooth spline to extract the oscillatory residual
 from scipy.interpolate import UnivariateSpline
 for r_data, xi_data, color, marker, label in [
     (r_pre, xi_pre, 'C0', 'o', 'Pre-recon residual'),
@@ -227,7 +222,7 @@ plt.savefig(fname, dpi=150, bbox_inches='tight')
 plt.close()
 print(f"\nSaved: {fname}")
 
-# Save data
+# save data
 np.savez(os.path.join(mcmc_dir, 'xi_data.npz'),
          r_pre=r_pre, xi_pre=xi_pre,
          r_rec=r_rec, xi_rec=xi_rec,

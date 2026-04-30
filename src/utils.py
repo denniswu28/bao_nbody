@@ -1,8 +1,6 @@
 """
 utils.py
---------
-Shared utilities: cosmology helpers, comoving distance integration,
-plotting defaults, and snapshot I/O helpers.
+shared utilities: cosmology helpers, comoving distance, plotting, config loader.
 """
 
 import numpy as np
@@ -11,35 +9,15 @@ import yaml
 import os
 
 
-# ── Cosmology ────────────────────────────────────────────────────────────────
-
 def comoving_distance(z, h, Omega_m, Omega_de=None, w0=-1.0, wa=0.0):
-    """
-    Comoving distance chi(z) in Mpc/h via numerical integration.
-
-        chi(z) = c/H0 * integral_0^z dz' / E(z')
-
-    where E(z) = H(z)/H0.
-
-    Parameters
-    ----------
-    w0, wa : float
-        Dark energy equation of state parameters (CPL parametrization).
-        w(a) = w0 + wa*(1-a)
-
-    Returns
-    -------
-    chi : float
-        Comoving distance in Mpc/h.
-    """
+    # comoving distance via numerical integration; CPL dark energy
     if Omega_de is None:
-        Omega_de = 1 - Omega_m   # flat universe
+        Omega_de = 1 - Omega_m
 
-    c_over_H0 = 2997.9   # Mpc/h  (c / (100 km/s/Mpc))
+    c_over_H0 = 2997.9   # Mpc/h
 
     def E(zp):
         a = 1 / (1 + zp)
-        # Dark energy density with CPL: rho_de / rho_de0 = a^{-3(1+w0+wa)} * exp(-3*wa*(1-a))
         Omega_de_z = Omega_de * a**(-3*(1 + w0 + wa)) * np.exp(-3 * wa * (1 - a))
         return np.sqrt(Omega_m * (1 + zp)**3 + Omega_de_z)
 
@@ -48,12 +26,10 @@ def comoving_distance(z, h, Omega_m, Omega_de=None, w0=-1.0, wa=0.0):
 
 
 def angular_diameter_distance(z, h, Omega_m, **kwargs):
-    """Angular diameter distance D_A(z) = chi(z) / (1+z) in Mpc/h."""
     return comoving_distance(z, h, Omega_m, **kwargs) / (1 + z)
 
 
 def hubble_z(z, h, Omega_m, Omega_de=None, w0=-1.0, wa=0.0):
-    """H(z) in km/s/(Mpc/h)."""
     if Omega_de is None:
         Omega_de = 1 - Omega_m
     a = 1 / (1 + z)
@@ -62,21 +38,13 @@ def hubble_z(z, h, Omega_m, Omega_de=None, w0=-1.0, wa=0.0):
     return 100.0 * E   # H0 = 100h km/s/Mpc
 
 
-# ── Config ───────────────────────────────────────────────────────────────────
-
 def load_config(fname):
-    """Load YAML configuration file."""
     with open(fname, 'r') as f:
         return yaml.safe_load(f)
 
 
-# ── Plotting helpers ─────────────────────────────────────────────────────────
-
 def plot_pk_comparison(k_list, Pk_list, labels, colors=None, title='',
                        fname=None, k_range=(1e-2, 0.4)):
-    """
-    Plot multiple P(k) on the same axes for comparison.
-    """
     import matplotlib.pyplot as plt
 
     if colors is None:
@@ -85,7 +53,7 @@ def plot_pk_comparison(k_list, Pk_list, labels, colors=None, title='',
     fig, axes = plt.subplots(2, 1, figsize=(8, 9), sharex=True,
                               gridspec_kw={'height_ratios': [2, 1]})
 
-    # Reference: first entry
+    # use first curve as reference for ratio panel
     k_ref, Pk_ref = k_list[0], Pk_list[0]
     from scipy.interpolate import interp1d
     Pk_ref_interp = interp1d(k_ref, Pk_ref, bounds_error=False, fill_value=np.nan)
@@ -93,7 +61,6 @@ def plot_pk_comparison(k_list, Pk_list, labels, colors=None, title='',
     for k, Pk, label, color in zip(k_list, Pk_list, labels, colors):
         axes[0].loglog(k, Pk, label=label, color=color, alpha=0.8)
 
-        # Ratio to first
         Pk_interp = interp1d(k, Pk, bounds_error=False, fill_value=np.nan)
         k_common = np.logspace(np.log10(k_range[0]), np.log10(k_range[1]), 200)
         ratio = Pk_interp(k_common) / Pk_ref_interp(k_common)
@@ -119,9 +86,6 @@ def plot_pk_comparison(k_list, Pk_list, labels, colors=None, title='',
 
 
 def plot_density_slices(snapshots, L, fname=None):
-    """
-    Plot projected density field slices from a list of N-body snapshots.
-    """
     import matplotlib.pyplot as plt
 
     n = len(snapshots)
@@ -148,17 +112,11 @@ def plot_density_slices(snapshots, L, fname=None):
 
 
 def make_animation(snapshot_dir, output_fname, L, fps=5):
-    """
-    Make an MP4 animation of the density field evolution from HDF5 snapshots.
-
-    Reads all snap_*.h5 files in snapshot_dir, renders a projected density
-    slice for each, and stitches them into an MP4 using matplotlib animation.
-    """
     import glob
     import h5py
     import matplotlib
     matplotlib.use('Agg')
-    # Set ffmpeg path from imageio-ffmpeg before any animation imports
+    # tell matplotlib where to find ffmpeg
     try:
         import imageio_ffmpeg
         matplotlib.rcParams['animation.ffmpeg_path'] = imageio_ffmpeg.get_ffmpeg_exe()
@@ -169,23 +127,23 @@ def make_animation(snapshot_dir, output_fname, L, fps=5):
 
     snap_files = sorted(glob.glob(os.path.join(snapshot_dir, 'snap_*.h5')))
     if not snap_files:
-        print("No HDF5 snapshots found for animation.")
+        print("no HDF5 snapshots found for animation.")
         return
 
-    # Load all density fields
+    # load all density fields
     frames = []
     for f in snap_files:
         with h5py.File(f, 'r') as hf:
             delta = hf['delta'][:]
             z = float(hf.attrs['z'])
-        # Project along z-axis (thin slab for contrast)
+        # project a thin slab along z for contrast
         slab = delta.shape[2] // 8
         delta_proj = delta[:, :, :slab].mean(axis=2)
         frames.append((delta_proj, z))
 
-    print(f"Rendering animation: {len(frames)} frames at {fps} fps")
+    print(f"rendering animation: {len(frames)} frames at {fps} fps")
 
-    # Consistent color scale across all frames
+    # one color scale for all frames
     vmax_global = max(np.percentile(np.abs(f[0]), 99.5) for f in frames)
 
     fig, ax = plt.subplots(figsize=(7, 6))
@@ -212,14 +170,9 @@ def make_animation(snapshot_dir, output_fname, L, fps=5):
     writer = FFMpegWriter(fps=fps, extra_args=['-pix_fmt', 'yuv420p'])
     anim.save(output_fname, writer=writer, dpi=150)
     plt.close(fig)
-    print(f"Animation saved: {output_fname}")
+    print(f"animation saved: {output_fname}")
 
-
-# ── Error estimation ─────────────────────────────────────────────────────────
 
 def pk_error_gaussian(Pk, nmodes):
-    """
-    Gaussian variance of P(k) estimator:
-        sigma_P(k) = sqrt(2/N_modes) * P(k)
-    """
+    # gaussian P(k) variance: sigma = sqrt(2/N_modes) * P
     return np.sqrt(2.0 / nmodes) * np.abs(Pk)

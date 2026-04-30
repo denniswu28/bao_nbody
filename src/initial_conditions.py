@@ -1,22 +1,9 @@
 """
 initial_conditions.py
 ---------------------
-Zel'dovich Approximation (ZA) for 3D cosmological initial conditions.
-
-The ZA displaces particles from a uniform grid using the linear displacement
-field Psi(k), computed from the density field via the Poisson equation in
-Fourier space:
-
-    Psi(k) = -i * k_hat / k * delta(k)
-
-Particle positions:   x = x_grid + D(z) * Psi
-Particle velocities:  v = a * H(z) * f * D(z) * Psi
-
-where f = d ln D / d ln a ~ Omega_m(z)^0.55 is the linear growth rate.
-
-References:
-    Zel'dovich (1970)
-    Dolag et al. (2005) — IC generation review
+Zel'dovich approximation initial conditions for the N-body sim.
+Particles start on a uniform grid and get displaced by Psi computed
+from a Gaussian random density field with the linear P(k).
 """
 
 import numpy as np
@@ -24,14 +11,6 @@ from pk_input import power_spectrum, growth_factor
 
 
 def make_grid(N, L):
-    """
-    Create a uniform 3D particle grid with N^3 particles in a box of side L.
-
-    Returns
-    -------
-    pos : ndarray, shape (3, N^3)
-        Particle positions in Mpc/h, centered at box origin [-L/2, L/2].
-    """
     dx = L / N
     x = np.arange(N) * dx - L / 2 + dx / 2
     xx, yy, zz = np.meshgrid(x, x, x, indexing='ij')
@@ -40,39 +19,15 @@ def make_grid(N, L):
 
 
 def _k_grids(N, L):
-    """
-    Compute 3D k-space grids for an N^3 box of side L.
-
-    Returns kx, ky, kz grids and the scalar |k| grid.
-    """
     dk = 2 * np.pi / L
-    k1d = np.fft.fftfreq(N, d=1.0 / N) * dk    # [0, dk, 2dk, ..., -dk]
+    k1d = np.fft.fftfreq(N, d=1.0 / N) * dk
     kx, ky, kz = np.meshgrid(k1d, k1d, k1d, indexing='ij')
     k2 = kx**2 + ky**2 + kz**2
-    k2[0, 0, 0] = 1.0    # avoid division by zero; will be zeroed later
+    k2[0, 0, 0] = 1.0   # avoid divide by zero at DC
     return kx, ky, kz, k2
 
 
 def generate_gaussian_field(N, L, Pk_func, seed=42):
-    """
-    Generate a Gaussian random density field delta(x) with power spectrum P(k).
-
-    Parameters
-    ----------
-    N : int
-        Grid size per side.
-    L : float
-        Box side length in Mpc/h.
-    Pk_func : callable
-        P(k) function, takes k array in h/Mpc, returns (Mpc/h)^3.
-    seed : int
-        Random seed.
-
-    Returns
-    -------
-    delta_k : ndarray, shape (N, N, N), complex
-        Density field in Fourier space.
-    """
     rng = np.random.default_rng(seed)
 
     kx, ky, kz, k2 = _k_grids(N, L)
@@ -83,35 +38,21 @@ def generate_gaussian_field(N, L, Pk_func, seed=42):
     mask = k > 0
     Pk[mask] = Pk_func(k[mask])
 
-    # Normalization: numpy DFT convention requires <|DFT(delta)|^2> = N^6 * P(k) / V.
-    # Since we take Re(IFFT) of non-Hermitian modes (discards half the power),
-    # we compensate by setting amplitude = N^3 * sqrt(P / V) so that the
-    # real-space field recovers the correct P(k) after the round-trip:
-    #   <|delta_k|^2> = 2 * amplitude^2 = 2 * N^6 * P / V
-    #   Re(IFFT) halves the power → recovered P(k) = P(k).
+    # amplitude tuned so Re(IFFT) recovers the input power spectrum
+    # (factor of 2 from drawing non-Hermitian modes cancels the Re() halving)
     V = L**3
     amplitude = N**3 * np.sqrt(Pk / V)
 
-    # Draw complex Gaussian modes
     re = rng.standard_normal((N, N, N))
     im = rng.standard_normal((N, N, N))
     delta_k = amplitude * (re + 1j * im)
-    delta_k[0, 0, 0] = 0.0   # zero mean
+    delta_k[0, 0, 0] = 0.0
 
     return delta_k
 
 
 def displacement_field(delta_k, N, L):
-    """
-    Compute the 3D Zel'dovich displacement field Psi from delta_k.
-
-    Solves: Psi(k) = -i * k / k^2 * delta(k)
-
-    Returns
-    -------
-    Psi : ndarray, shape (3, N^3)
-        Displacement vectors for each particle.
-    """
+    # zel'dovich displacement field from delta
     kx, ky, kz, k2 = _k_grids(N, L)
 
     Psi = []
@@ -125,20 +66,16 @@ def displacement_field(delta_k, N, L):
 
 
 def hubble(z, h, Omega_m, Omega_lambda=None):
-    """
-    Hubble parameter H(z) in km/s/(Mpc/h), i.e. returns H(z)/H0.
-    """
+    # dimensionless Hubble factor
     if Omega_lambda is None:
         Omega_lambda = 1 - Omega_m
     a = 1 / (1 + z)
     E2 = Omega_m / a**3 + Omega_lambda
-    return np.sqrt(E2)   # H(z) = H0 * E(z), returns E(z)
+    return np.sqrt(E2)
 
 
 def growth_rate(z, Omega_m):
-    """
-    Linear growth rate f = d ln D / d ln a ~ Omega_m(z)^0.55.
-    """
+    # logarithmic growth rate, standard Omega_m(z)^0.55 approximation
     Omega_lambda = 1 - Omega_m
     a = 1 / (1 + z)
     Omega_m_z = Omega_m / a**3 / (Omega_m / a**3 + Omega_lambda)
@@ -147,61 +84,27 @@ def growth_rate(z, Omega_m):
 
 def make_ics(N, L, h, Omega_m, Omega_b, n_s, sigma8,
              z_initial=49.0, seed=42):
-    """
-    Generate Zel'dovich initial conditions at redshift z_initial.
-
-    Parameters
-    ----------
-    N : int
-        Number of particles per side (N^3 total).
-    L : float
-        Box side length in Mpc/h.
-    z_initial : float
-        Starting redshift (typically 49 or 99).
-    seed : int
-        Random seed.
-
-    Returns
-    -------
-    pos : ndarray, shape (3, N^3)
-        Initial particle positions in Mpc/h.
-    vel : ndarray, shape (3, N^3)
-        Initial particle velocities in km/s.
-    delta_k : ndarray, shape (N, N, N)
-        Initial density field in Fourier space (for diagnostics).
-    """
     print(f"Generating Zel'dovich ICs: N={N}, L={L} Mpc/h, z_init={z_initial}")
 
-    # Growth factor at z_initial (normalized to 1 at z=0)
     D_init = growth_factor(z_initial, Omega_m)
 
-    # P(k) at z=0, then scale to z_initial
     def Pk_func(k):
         return power_spectrum(k, h, Omega_m, Omega_b, n_s, sigma8, z=0.0)
 
-    # Generate density field
     delta_k = generate_gaussian_field(N, L, Pk_func, seed=seed)
-    delta_k_init = delta_k * D_init    # scale to z_initial
+    delta_k_init = delta_k * D_init
 
-    # Displacement field
     Psi = displacement_field(delta_k_init, N, L)
-
-    # Particle grid positions
     pos_grid = make_grid(N, L)
-
-    # Zel'dovich displacement
     pos = pos_grid + Psi
 
-    # Velocities: v = a * H * f * D * Psi_0
-    # In units where H0=100h km/s/Mpc, a=1/(1+z)
+    # zel'dovich peculiar velocity (Psi already carries the initial growth factor)
     a_init = 1 / (1 + z_initial)
-    Hz = hubble(z_initial, h, Omega_m) * 100   # H(z) in km/s/Mpc
+    Hz = hubble(z_initial, h, Omega_m) * 100   # km/s/Mpc
     f = growth_rate(z_initial, Omega_m)
-
-    # Psi is already scaled by D_init, so vel = a * H * f * Psi
     vel = a_init * Hz * f * Psi
 
-    # Apply periodic boundary conditions
+    # periodic BC
     pos = pos % L - L / 2
 
     print(f"  D(z_init={z_initial:.0f}) = {D_init:.4f}")
