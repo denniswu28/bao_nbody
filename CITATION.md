@@ -53,7 +53,7 @@ Bias correction for inverted sample covariance matrices:
 BAO reconstruction library (optional dependency, used in `src/main.py`
 `stage_recon`):
 
-> Sìmonet al., cosmodesi/pyrecon. GitHub.
+> cosmodesi developers, cosmodesi/pyrecon. GitHub.
 > https://github.com/cosmodesi/pyrecon
 >
 > License: BSD-3-Clause (see https://github.com/cosmodesi/pyrecon/blob/main/LICENSE)

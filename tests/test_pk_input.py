@@ -41,7 +41,11 @@ def test_sound_horizon_range():
 
 
 def test_sound_horizon_regression():
-    """Regression test: EH98 eq.26 Mpc/h value must stay within 1% of 100.9 Mpc/h."""
+    """Regression test: EH98 eq.26 Mpc/h value must stay within 1% of 100.9 Mpc/h.
+
+    sound_horizon() returns r_s = r_s_Mpc × h ≈ 100.9 Mpc/h where r_s_Mpc ≈ 149.8 Mpc
+    is the EH98 fitting formula output and h = 0.6736 converts to Mpc/h (h⁻¹ Mpc).
+    """
     r_s = sound_horizon(0.6736, 0.3153, 0.0493)
     r_s_expected = 100.92   # Mpc/h (= 149.8 Mpc * h)
     assert abs(r_s - r_s_expected) / r_s_expected < 0.01, (

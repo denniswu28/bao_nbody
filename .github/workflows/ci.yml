@@ -6,10 +6,16 @@ on:
   pull_request:
     branches: ["main", "master"]
 
+# Minimal read-only permissions for the GITHUB_TOKEN.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -42,6 +48,8 @@ jobs:
   lightweight-pipeline:
     name: Lightweight pipeline smoke-test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4

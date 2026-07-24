@@ -3,8 +3,9 @@
 [![CI](https://github.com/denniswu28/bao_nbody/actions/workflows/ci.yml/badge.svg)](https://github.com/denniswu28/bao_nbody/actions/workflows/ci.yml)
 
 An end-to-end Baryon Acoustic Oscillation (BAO) simulation and analysis pipeline
-built for PHY 305. The BAO scale (~150 Mpc, ~101 Mpc/h) is a "standard ruler"
-imprinted by sound waves in the early universe. This project simulates how
+built for PHY 305. The BAO scale is a "standard ruler" imprinted by sound waves
+in the early universe (~150 Mpc in physical units, the same scale expressed as
+~101 Mpc/h in the h-scaled units used throughout this pipeline). This project simulates how
 gravity smears the signal over cosmic time and how BAO reconstruction partially
 restores it.
 

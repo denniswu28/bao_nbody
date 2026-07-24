@@ -3,7 +3,7 @@ tests/test_power_spectrum.py
 ----------------------------
 Tests for the P(k) estimator.
 
-Shot noise and CIC deconvolution convention
+Shot Noise and CIC Deconvolution Convention
 -------------------------------------------
 CIC assignment windows both signal and shot noise identically, so the
 measured power in each mode is:
@@ -15,7 +15,7 @@ The correct estimator therefore:
   2. Subtracts 1/nbar to remove the (now-unwindowed) Poisson shot noise.
 
 Reversing this order (subtract then divide) overcorrects at high k because
-W_CIC -> 0 near the Nyquist frequency, causing divergent negative values.
+W_CIC approaches 0 near the Nyquist frequency, causing divergent negative values.
 """
 
 import numpy as np
@@ -65,8 +65,8 @@ def test_nmodes_positive():
     assert np.all(nmodes > 0), "Some k-bins have zero modes"
 
 
-def test_shotnoise_no_subtraction_gives_positive_pk():
-    """Without subtraction, P(k) for a uniform catalog should be close to 1/nbar > 0."""
+def test_shotnoise_no_subtraction_pk_positive():
+    """Without shot-noise subtraction, P(k) for a uniform catalog should be close to 1/nbar > 0."""
     N = 16
     L = 300.0
     rng = np.random.default_rng(5)
