@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install core dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install pyrecon (optional — skip on failure)
+        run: |
+          pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon" || \
+            echo "pyrecon install failed — reconstruction stage will be skipped"
+        continue-on-error: true
+
+      - name: Run unit tests
+        run: |
+          pip install pytest
+          pytest tests/ -v --tb=short
+
+  lightweight-pipeline:
+    name: Lightweight pipeline smoke-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create output directories
+        run: |
+          mkdir -p outputs/snapshots outputs/figures outputs/mcmc
+
+      - name: Run ICS stage (smoke test)
+        run: |
+          cd src
+          python main.py --config ../configs/ci_lightweight.yaml --stage ics
+
+      - name: Run N-body stage (smoke test)
+        run: |
+          cd src
+          python main.py --config ../configs/ci_lightweight.yaml --stage nbody
+
+      - name: Run lognormal stage (smoke test)
+        run: |
+          cd src
+          python main.py --config ../configs/ci_lightweight.yaml --stage lognormal

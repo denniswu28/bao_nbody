@@ -25,16 +25,19 @@ def estimate_pk(pos, N, L, n_mesh=None, subtract_shotnoise=True):
     kx, ky, kz = np.meshgrid(k1d, k1d, k1d, indexing='ij')
     k_mag = np.sqrt(kx**2 + ky**2 + kz**2)
 
-    # subtract shot noise BEFORE CIC deconvolve, otherwise the noise floor
+    # CIC assignment windows both signal and shot noise.  Deconvolve first,
+    # then subtract the (now-unwindowed) shot noise 1/nbar.
+    # Wrong order (subtract then divide) overcorrects at high k where W->0.
     Pk_raw = np.abs(delta_k)**2 * V
-    if subtract_shotnoise:
-        Pk_raw -= 1.0 / nbar
 
     W_cic = (cic_window_correction_1d(kx, dx)
              * cic_window_correction_1d(ky, dx)
              * cic_window_correction_1d(kz, dx))
     W_cic[0, 0, 0] = 1.0
     Pk_raw /= W_cic**2
+
+    if subtract_shotnoise:
+        Pk_raw -= 1.0 / nbar
 
     # spherical shell binning
     k_nyq = np.pi / dx
@@ -100,11 +103,11 @@ def _xi_from_delta_grid(delta, L, n_mesh, nbar, r_max, n_bins):
              * cic_window_correction_1d(kz, dx))
     W_cic[0, 0, 0] = 1.0
 
-    # subtract shot noise before CIC deconvolution
+    # deconvolve CIC first, then subtract shot noise
     Pk_grid = np.abs(delta_k)**2 / n_mesh**6
+    Pk_grid /= W_cic**2
     if nbar is not None:
         Pk_grid -= 1.0 / (nbar * V)
-    Pk_grid /= W_cic**2
     xi_grid = np.fft.ifftn(Pk_grid).real * n_mesh**3
 
     x1d = np.fft.fftfreq(n_mesh, d=1.0/n_mesh) * dx

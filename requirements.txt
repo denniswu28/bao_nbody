@@ -5,4 +5,9 @@ pyyaml>=6.0
 h5py>=3.8
 tqdm>=4.65
 corner>=2.2
-pyrecon>=0.3
+
+# Reconstruction stage (optional — pipeline skips gracefully if absent).
+# pyrecon 0.3.0 on PyPI has a broken sdist; install from source instead:
+#   pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon"
+# or with optional algorithm extras (NUFFT, etc.):
+#   pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon"

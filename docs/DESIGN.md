@@ -39,7 +39,10 @@ The pipeline runs sequentially: ICs → N-body → P(k) estimation → lognormal
 Eisenstein-Hu (1998) transfer function producing P(k) with BAO wiggles and a smooth no-wiggle reference. Also provides `growth_factor(z)` and `sound_horizon()`.
 
 **Verified outputs:**
-- `r_s ≈ 149.82 Mpc/h` (EH98 eq. 26 fitting formula)
+- `r_s ≈ 100.9 Mpc/h` (= 149.8 Mpc; EH98 eq. 26 fitting formula).
+  Convention: `sound_horizon()` returns in Mpc/h via `r_s_Mpc * h` where
+  `r_s_Mpc` is the EH98 Mpc result (~149.8) and `h` converts to Mpc/h.
+  The no-wiggle transfer function recovers Mpc by dividing back by `h`.
 - P(k) plot with visible BAO wiggles saved to `outputs/figures/pk_input.png`
 
 **Known fixes already applied:**

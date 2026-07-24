@@ -60,7 +60,7 @@ All core components (CIC mass assignment, FFT Poisson solver, leapfrog integrato
 
 The matter power spectrum is computed using the **Eisenstein & Hu (1998)** analytic transfer function, which captures both the full BAO oscillation pattern ("wiggles") and a smooth no-wiggle reference. Key quantities:
 
-- **Sound horizon** (EH98 eq. 26 fitting formula): $r_s \approx 149.8$ Mpc/$h$
+- **Sound horizon** (EH98 eq. 26 fitting formula): $r_s \approx 100.9$ Mpc/$h$ (= 149.8 Mpc). All pipeline distances are in Mpc/$h$; the EH98 formula returns Mpc and `sound_horizon()` multiplies by $h$ to convert.
 - **Growth factor**: Carroll, Press & Turner (1992) approximation, normalized $D(z=0) = 1$
 - **Growth rate**: $f(z) = \Omega_m(z)^{0.55}$
 - **Normalization**: $\sigma_8 = 0.8111$ via a top-hat window integral over an internal log-spaced $k$ grid
@@ -203,7 +203,7 @@ where $O_\text{wiggle} = [P_\text{lin}(k/\alpha) - P_\text{nw}(k/\alpha)]\,e^{-k
 |-----------|-------|
 | $\alpha$ | $0.97^{+0.43}_{-0.30}$ |
 | $\Sigma_\text{nl}$ | $4.79^{+3.56}_{-3.28}$ Mpc/$h$ |
-| Recovered $r_s$ | 153.8 Mpc/$h$ |
+| Recovered $r_s$ | $r_s^\text{fid}/\alpha \approx 104$ Mpc/$h$ |
 
 ![Pre-recon broadband-marginalized corner plot](outputs/mcmc/corner_pre_recon_marg.png)
 
@@ -215,7 +215,7 @@ where $O_\text{wiggle} = [P_\text{lin}(k/\alpha) - P_\text{nw}(k/\alpha)]\,e^{-k
 |-----------|-------|
 | $\alpha$ | $1.05^{+0.38}_{-0.33}$ |
 | $\Sigma_\text{nl}$ | $4.55^{+3.05}_{-3.07}$ Mpc/$h$ |
-| Recovered $r_s$ | 142.3 Mpc/$h$ |
+| Recovered $r_s$ | $r_s^\text{fid}/\alpha \approx 96$ Mpc/$h$ |
 
 ![Post-recon broadband-marginalized corner plot](outputs/mcmc/corner_post_recon_marg.png)
 
@@ -242,7 +242,7 @@ The 4-panel summary figure captures the entire analysis pipeline in a single vie
 
 | Quantity | Value | Notes |
 |----------|-------|-------|
-| Sound horizon $r_s^\text{fid}$ | 149.8 Mpc/$h$ | EH98 eq. 26 fitting formula |
+| Sound horizon $r_s^\text{fid}$ | 100.9 Mpc/$h$ (= 149.8 Mpc) | EH98 eq. 26; `sound_horizon()` returns Mpc/h |
 | BAO bump location in $\xi(r)$ | ~105 Mpc/$h$ | Configuration-space peak |
 | Single N-body BAO SNR | 3.4 | In $r^2\xi(r)$, 80–160 Mpc/$h$ range |
 | Mock-averaged BAO SNR | ~383 | 100 lognormal realizations |
@@ -252,6 +252,12 @@ The 4-panel summary figure captures the entire analysis pipeline in a single vie
 | Post-recon $\alpha$ (recon summary) | $1.199 \pm 0.001$ | 8× tighter than pre-recon |
 | Pre-recon $\Sigma_\text{nl}$ (recon summary) | 2.3 Mpc/$h$ | |
 | Post-recon $\Sigma_\text{nl}$ (recon summary) | 0.6 Mpc/$h$ | Reconstruction reduces damping |
+
+**Note on recovered $r_s$ values**: MCMC reports $r_s = r_s^\text{fid}/\alpha$
+where $r_s^\text{fid} \approx 100.9$ Mpc/$h$. Values near ~153 or ~142 Mpc/$h$
+quoted in earlier MCMC summaries reflected a prior code version that returned
+the EH98 Mpc value without the $\times h$ conversion; those specific numbers
+have been removed.  The $\alpha$ posteriors (dimensionless) are unaffected.
 
 ---
 
