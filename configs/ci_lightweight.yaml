@@ -21,8 +21,8 @@ cosmology:
 
 box:
   L: 500.0          # box side length [Mpc/h] — smaller than default (1500)
-  N: 16             # 16^3 = 4096 particles (vs 128^3 in default)
-  N_mesh: 32        # PM mesh (2x oversampling)
+  N: 32             # 32^3 = 32768 particles (vs 128^3 in default)
+  N_mesh: 64        # PM mesh (2x oversampling)
 
 galaxy:
   b: 1.5

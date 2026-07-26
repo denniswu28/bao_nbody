@@ -25,7 +25,56 @@ import numpy as np
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from power_spectrum import estimate_pk
+from power_spectrum import estimate_pk, cic_window_correction_1d
+
+
+def _pk_wrong_ordering(pos, N, L, n_mesh=64):
+    """Deliberately wrong estimator: subtract shot noise BEFORE dividing by W_CIC^2.
+
+    This overcorrects at high k where W_CIC → 0, causing divergent negative values
+    near the Nyquist frequency.  Used in tests to cross-check that the correct
+    ``estimate_pk`` ordering passes assertions that this wrong ordering fails.
+    """
+    from pm_gravity import cic_paint_vectorized
+    N_particles = pos.shape[1]
+    V = L**3
+    dx = L / n_mesh
+    nbar = N_particles / V
+
+    delta = cic_paint_vectorized(pos, n_mesh, L)
+    delta_k = np.fft.fftn(delta) / n_mesh**3
+
+    dk = 2 * np.pi / L
+    k1d = np.fft.fftfreq(n_mesh, d=1.0 / n_mesh) * dk
+    kx, ky, kz = np.meshgrid(k1d, k1d, k1d, indexing='ij')
+    k_mag = np.sqrt(kx**2 + ky**2 + kz**2)
+
+    Pk_raw = np.abs(delta_k)**2 * V
+    # WRONG ORDER: subtract shot noise first, then divide by W_CIC^2
+    Pk_raw -= 1.0 / nbar
+    W_cic = (cic_window_correction_1d(kx, dx)
+             * cic_window_correction_1d(ky, dx)
+             * cic_window_correction_1d(kz, dx))
+    W_cic[0, 0, 0] = 1.0
+    Pk_raw /= W_cic**2
+
+    k_nyq = np.pi / dx
+    k_min = dk
+    n_bins = n_mesh // 2
+    k_edges = np.linspace(0, k_nyq, n_bins + 1)
+    k_flat = k_mag.ravel()
+    Pk_flat = Pk_raw.ravel()
+    bin_idx = np.digitize(k_flat, k_edges) - 1
+    valid = (bin_idx >= 0) & (bin_idx < n_bins)
+    bi = bin_idx[valid]
+    counts = np.bincount(bi, minlength=n_bins)
+    k_sum = np.bincount(bi, weights=k_flat[valid], minlength=n_bins)
+    Pk_sum = np.bincount(bi, weights=Pk_flat[valid], minlength=n_bins)
+    good = counts > 0
+    k_bins = k_sum[good] / counts[good]
+    Pk_bins = Pk_sum[good] / counts[good]
+    mask = (k_bins >= k_min) & (k_bins < 0.9 * k_nyq)
+    return k_bins[mask], Pk_bins[mask]
 
 
 def test_uniform_catalog_shotnoise():
@@ -124,17 +173,20 @@ def test_injected_signal_recovery():
     ρ(x) ∝ 1 + A sin(k0 x) using acceptance-rejection sampling.  With A ≤ 1
     the acceptance probability (1 + A sin(k0 x))/(1 + A) is in [0, 1]
     everywhere, guaranteeing a valid nonneg density for rejection sampling.
-    The measured P(k) at the bin containing k0 should significantly exceed
-    the shot-noise floor.
 
     Two checks distinguish the CIC/shot-noise ordering convention:
-      (1) P(k0) >> shot_noise  — signal preserved by correct ordering.
-      (2) mean P(k) at high k is not strongly negative — wrong ordering
-          (subtract-then-divide) causes W_CIC → 0 to amplify negative
-          residuals near Nyquist (see Jing 2005, ApJ 620, 559).
+      (1) Signal recovery: P(k0) is within a justified factor of the analytic
+          expectation P_analytic = (A/2)^2 × L^3 (see Jing 2005, ApJ 620, 559).
+      (2) Ordering discriminator: mean P(k) for k > 0.8 × k_Nyquist must be
+          close to zero for the correct estimator.  The wrong ordering
+          (subtract-then-divide) causes W_CIC → 0 near Nyquist to amplify the
+          subtracted shot noise to large negative values (~−1 to −10 × shot_noise
+          in the high-k bins).  A cross-check using _pk_wrong_ordering() verifies
+          that the wrong ordering FAILS this same assertion, proving that the test
+          actually discriminates between the two conventions.
 
-    The justified k cut is k < k_Nyquist / 2 for shell-averaged bins where
-    CIC aliasing and sampling variance remain manageable (see Jing 2005).
+    The k cut k > 0.8 × k_Nyquist targets the highest-k bins where the CIC
+    window is small and the ordering error is largest (Jing 2005).
     """
     N = 32
     L = 500.0
@@ -165,27 +217,48 @@ def test_injected_signal_recovery():
     nbar = N_total / L**3
     shot_noise = 1.0 / nbar
 
-    # Check 1: Signal recovery — the bin nearest k0 must have elevated power.
-    # Analytic expectation: P(k0) ≈ (A/2)^2 × L^3 >> shot_noise for A=0.5.
+    # Check 1: Analytic signal amplitude within a justified tolerance.
+    # Analytic P at the fundamental mode: (A/2)^2 × V = (0.25)^2 × 500^3 ≈ 7.8e6.
+    # The shell-averaged bin includes ~18 modes; the 2 signal modes (±k0 along x)
+    # contribute ~(2/18) × P_analytic ≈ 0.11 × P_analytic after averaging.
+    # A 5% floor (0.05 × P_analytic) provides generous margin for sampling noise.
     idx_k0 = np.argmin(np.abs(k - k0))
-    assert Pk[idx_k0] > 2 * shot_noise, (
-        f"P(k0={k0:.4f}) = {Pk[idx_k0]:.2f} should exceed 2×shot_noise = "
-        f"{2*shot_noise:.2f}. Injected signal not recovered."
+    analytic_Pk0 = (A / 2)**2 * L**3
+    assert Pk[idx_k0] > 0.05 * analytic_Pk0, (
+        f"P(k0={k0:.4f}) = {Pk[idx_k0]:.2e} is far below the analytic expectation "
+        f"0.05 × (A/2)^2 × V = {0.05 * analytic_Pk0:.2e}. Injected signal not recovered."
     )
 
-    # Check 2: No divergent negative values at high k (ordering discriminator).
-    # With correct ordering (divide then subtract) the high-k residuals are
-    # near zero.  With wrong ordering (subtract then divide) W_CIC → 0 near
-    # Nyquist amplifies the subtracted shot noise to large negative values
-    # (mean P(k) ~ -10^3 × shot_noise, see Jing 2005).
-    # k_Nyquist / 2 is a conservative upper limit before aliasing dominates.
-    k_nyq = np.pi * 64 / L   # Nyquist for n_mesh=64
-    high_k_mask = (k > 4 * k0) & (k < k_nyq / 2)
-    if high_k_mask.any():
-        mean_high_k = np.mean(Pk[high_k_mask])
-        assert mean_high_k > -5 * shot_noise, (
-            f"Mean P(k) at 4k0 < k < k_Nyq/2: {mean_high_k:.1f} is strongly negative "
-            f"(threshold -5×shot_noise = {-5*shot_noise:.1f}). "
-            "Wrong CIC/shot-noise ordering causes divergent negative P(k) near Nyquist "
-            "(Jing 2005, ApJ 620, 559)."
+    # Check 2: Ordering discriminator at very high k (k > 0.8 × k_Nyquist).
+    # At these scales, W_CIC is significantly < 1.  The correct estimator
+    # (divide-then-subtract) gives P(k) ≈ 0 after shot-noise removal.
+    # The wrong estimator (subtract-then-divide) amplifies the residual by 1/W_CIC^2
+    # ≫ 1, driving the shell-averaged mean to ~ -1 to -3 × shot_noise.
+    # A threshold of -0.5 × shot_noise is:
+    #   - well above what the wrong ordering produces (≲ -1 × shot_noise), and
+    #   - well below zero, so correct-ordering noise does not accidentally fail it.
+    k_nyq = np.pi * 64 / L   # Nyquist frequency for n_mesh=64
+    high_k_mask = k > 0.8 * k_nyq
+    assert high_k_mask.any(), (
+        "No k-bins found above 0.8 × k_Nyquist; check n_mesh and L parameters."
+    )
+    mean_high_k = np.mean(Pk[high_k_mask])
+    assert mean_high_k > -0.5 * shot_noise, (
+        f"Mean P(k) at k > 0.8 k_Nyq: {mean_high_k:.1f} (Mpc/h)^3 "
+        f"(threshold = -0.5 × shot_noise = {-0.5 * shot_noise:.1f}). "
+        "Strongly negative high-k values indicate wrong CIC/shot-noise ordering "
+        "(Jing 2005, ApJ 620, 559)."
+    )
+
+    # Cross-check: the WRONG ordering must FAIL the same high-k assertion.
+    # This verifies that the test actually discriminates the two conventions.
+    k_wr, Pk_wr = _pk_wrong_ordering(pos_signal, N, L, n_mesh=64)
+    high_k_wr = k_wr > 0.8 * k_nyq
+    if high_k_wr.any():
+        mean_wrong_high_k = np.mean(Pk_wr[high_k_wr])
+        assert mean_wrong_high_k < -0.5 * shot_noise, (
+            f"Wrong ordering should produce mean P(k) < -0.5 × shot_noise "
+            f"at k > 0.8 k_Nyq, but got {mean_wrong_high_k:.1f} "
+            f"(shot_noise = {shot_noise:.1f}). "
+            "The test is not correctly discriminating the ordering conventions."
         )

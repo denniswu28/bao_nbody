@@ -325,14 +325,14 @@ def main():
         if not os.path.isabs(out[key]):
             out[key] = os.path.normpath(os.path.join(project_root, out[key]))
 
-    # When --stage all is requested, fail clearly if pyrecon is not installed
-    # rather than silently skipping reconstruction and reporting "Pipeline complete."
-    if args.stage == 'all':
+    # Stages that require reconstruction fail clearly if pyrecon is not installed,
+    # rather than silently skipping and reporting "Pipeline complete."
+    if args.stage in ('all', 'recon', 'mcmc'):
         try:
             import pyrecon  # noqa: F401
         except ImportError:
             raise SystemExit(
-                f"\nERROR: pyrecon is required for '--stage all' but is not installed.\n"
+                f"\nERROR: pyrecon is required for '--stage {args.stage}' but is not installed.\n"
                 f"Install with:\n"
                 f"  {_PYRECON_INSTALL}\n"
                 "Or run a reduced workflow without reconstruction:\n"

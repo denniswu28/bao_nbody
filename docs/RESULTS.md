@@ -1,11 +1,19 @@
 # BAO Analysis Pipeline — Results Summary
 
-> **Note on figures**: All figures embedded below are generated artifacts
-> (not committed to the repository).  Run the full pipeline with
-> `python src/main.py --config configs/default.yaml` to produce them in
-> `outputs/figures/` and `outputs/mcmc/`.  The numerical results, tables,
-> and discussion below are independent of whether the figures have been
-> generated.
+> **Status**: Figures and numerical results below require regeneration with the
+> corrected P(k) estimator (CIC deconvolution applied before shot-noise
+> subtraction, as fixed in this branch). Run
+> `python src/main.py --config configs/default.yaml` from the repo root to
+> produce outputs in `outputs/`.  Image links and result tables marked
+> **TODO(Dennis)** will be filled in once the full N=128³ pipeline is re-run by
+> the repository owner.
+>
+> **Note on report/slides**: `docs/report/report.tex` and `docs/slides/` contain
+> preliminary results from an earlier code version and may list different
+> numerical values (e.g. SNR ~80, α ≈ 1.027–1.032, σ_α ≈ 0.010–0.016).
+> Those files are Dennis Wu's original submitted work and are preserved as-is.
+> The values below will be regenerated with the corrected estimator before
+> reconciling with those documents.
 
 ## Overview
 
@@ -74,7 +82,7 @@ The matter power spectrum is computed using the **Eisenstein & Hu (1998)** analy
 
 The ratio $P(k)/P_\text{nw}(k)$ oscillates around unity — these are the BAO wiggles that encode the sound horizon scale.
 
-![Eisenstein-Hu power spectrum with and without BAO wiggles, and their ratio](../outputs/figures/pk_input.png)
+<!-- TODO(Dennis): regenerate pk_input.png with corrected P(k) estimator -->
 
 ---
 
@@ -86,9 +94,9 @@ $$\mathbf{x} = \mathbf{q} + D(z_\text{init})\,\boldsymbol{\Psi}(\mathbf{q}), \qq
 
 $$\mathbf{v}_\text{pec} = a\,H(z)\,f(z)\,D(z)\,\boldsymbol{\Psi}_0$$
 
-At $z = 49$: $D \approx 0.02$, so particle displacements are small (a few Mpc/$h$) and the density field is nearly linear. The measured P(k) from the displaced particles matches the input linear theory to high precision:
+At $z = 49$: $D \approx 0.02$, so particle displacements are small (a few Mpc/$h$) and the density field is nearly linear. The measured P(k) from the displaced particles matches the input linear theory to high precision.
 
-![IC power spectrum validation: measured from particles vs. input theory at z=49](../outputs/figures/ic_pk_check.png)
+<!-- TODO(Dennis): regenerate ic_pk_check.png with corrected P(k) estimator -->
 
 ---
 
@@ -103,15 +111,15 @@ A **particle-mesh (PM) leapfrog** integrator evolves $128^3$ particles from $z =
 
 ### Density Field Evolution
 
-The density field evolves from a nearly uniform distribution at high redshift into the cosmic web of filaments, walls, and voids by $z = 0$:
+The density field evolves from a nearly uniform distribution at high redshift into the cosmic web of filaments, walls, and voids by $z = 0$.
 
-![Density field slices at z = 5.4, 2.0, 1.0, 0.5, 0.0](../outputs/figures/density_evolution.png)
+<!-- TODO(Dennis): regenerate density_evolution.png with full N=128³ run -->
 
 ### Power Spectrum Evolution
 
-The measured P(k) grows with time and agrees well with linear theory at large scales ($k \lesssim 0.05$ $h$/Mpc). At smaller scales, nonlinear structure formation causes the measured P(k) to exceed linear predictions — the ratio $P_\text{measured}/P_\text{linear}$ increasingly deviates from unity at high $k$ and low $z$:
+The measured P(k) grows with time and agrees well with linear theory at large scales ($k \lesssim 0.05$ $h$/Mpc). At smaller scales, nonlinear structure formation causes the measured P(k) to exceed linear predictions — the ratio $P_\text{measured}/P_\text{linear}$ increasingly deviates from unity at high $k$ and low $z$.
 
-![Power spectrum at five redshifts (left) and ratio to linear theory (right)](../outputs/figures/pk_evolution.png)
+<!-- TODO(Dennis): regenerate pk_evolution.png with corrected P(k) estimator -->
 
 The BAO wiggles, clearly visible in the linear input P(k), become progressively damped by nonlinear gravitational evolution. This damping is the key physical effect that motivates BAO reconstruction.
 
@@ -130,9 +138,9 @@ The sample covariance matrix $\hat{C}_{ij}$ is computed from the 100 P(k) measur
 
 $$\hat{C}^{-1}_\text{Hartlap} = \frac{N_\text{mocks} - N_\text{bins} - 2}{N_\text{mocks} - 1} \times \hat{C}^{-1}$$
 
-Diagnostics show the correlation matrix is diagonally dominant with mild off-diagonal correlations, and fractional P(k) errors are $\lesssim 5\%$ for $k > 0.02$ $h$/Mpc:
+Diagnostics show the correlation matrix is diagonally dominant with mild off-diagonal correlations, and fractional P(k) errors are $\lesssim 5\%$ for $k > 0.02$ $h$/Mpc.
 
-![Lognormal mean P(k), correlation matrix, and fractional error](../outputs/figures/covariance_diagnostics.png)
+<!-- TODO(Dennis): regenerate covariance_diagnostics.png with corrected P(k) estimator -->
 
 ---
 
@@ -149,24 +157,23 @@ The displaced data and random positions define a density–random (D−R) field 
 
 ### Pre- vs. Post-Reconstruction P(k)
 
-Post-reconstruction, the power spectrum rises closer to linear theory at intermediate scales ($k \sim 0.05$–$0.2$ $h$/Mpc):
+Post-reconstruction, the power spectrum rises closer to linear theory at intermediate scales ($k \sim 0.05$–$0.2$ $h$/Mpc).
 
-![Pre- and post-recon P(k) and P/P_nw ratio](../outputs/figures/recon_comparison.png)
+<!-- TODO(Dennis): regenerate recon_comparison.png with corrected P(k) estimator -->
 
 ### Reconstruction Summary
 
-The 4-panel reconstruction summary shows the power spectra, BAO wiggle ratio, and MCMC posteriors for $\alpha$ and $\Sigma_\text{nl}$:
+The reconstruction-summary MCMC fits the power spectra, BAO wiggle ratio, and MCMC posteriors for $\alpha$ and $\Sigma_\text{nl}$.
 
-![BAO reconstruction summary: P(k), wiggles, α and Σ posteriors](../outputs/figures/recon_summary.png)
+<!-- TODO(Dennis): regenerate recon_summary.png with corrected P(k) estimator -->
 
-Key results from the reconstruction-summary MCMC fit:
+**TODO(Dennis): regenerate the following result table with corrected P(k) estimator
+(CIC deconvolution before shot-noise subtraction) from the full N=128³ run.**
 
 | Quantity | Pre-Reconstruction | Post-Reconstruction |
 |----------|-------------------|---------------------|
-| $\alpha$ | $1.192 \pm 0.009$ | $1.199 \pm 0.001$ |
-| $\Sigma_\text{nl}$ | 2.3 Mpc/$h$ | 0.6 Mpc/$h$ |
-
-The post-reconstruction $\Sigma_\text{nl}$ drops from 2.3 to 0.6 Mpc/$h$, indicating that reconstruction reduces nonlinear BAO damping. The $\alpha$ uncertainty shrinks by nearly an order of magnitude. The systematic offset of $\alpha \approx 1.19$ from the fiducial $\alpha = 1$ is a known limitation of this small-box ($L = 1500$ Mpc/$h$), low-resolution ($N = 128^3$) simulation — see [Discussion](#discussion-known-limitations) below.
+| $\alpha$ | [pending] | [pending] |
+| $\Sigma_\text{nl}$ | [pending] | [pending] |
 
 ---
 
@@ -174,19 +181,18 @@ The post-reconstruction $\Sigma_\text{nl}$ drops from 2.3 to 0.6 Mpc/$h$, indica
 
 The two-point correlation function $\xi(r)$ provides a complementary view of the BAO feature in configuration space. The characteristic **BAO bump** appears at $r \sim 105$ Mpc/$h$, corresponding to the sound horizon scale.
 
-The plot shows $r^2 \xi(r)$ for linear theory, the N-body simulation at $z = 0$, the mean of 100 lognormal mocks, and the post-reconstruction D−R field:
+The plot shows $r^2 \xi(r)$ for linear theory, the N-body simulation at $z = 0$, the mean of 100 lognormal mocks, and the post-reconstruction D−R field.
 
-![Correlation function r²ξ(r) showing the BAO bump](../outputs/figures/xi_correlation_function.png)
+<!-- TODO(Dennis): regenerate xi_correlation_function.png with corrected P(k) estimator -->
 
 ### BAO Signal-to-Noise
 
-| Measurement | BAO SNR |
-|-----------|---------|
-| Single N-body realization | 3.4 |
-| Mock-averaged (100 mocks) | ~383 |
-| BAO signal amplitude | 106.8 (Mpc/$h$)² |
-
-The single-realization SNR of 3.4 is modest — expected for a $(1500\;\text{Mpc}/h)^3$ box with $128^3$ particles. The mock-averaged SNR of ~383 demonstrates that the BAO signal is robust and recoverable with sufficient volume or number of realizations.
+**TODO(Dennis): recompute SNR values after regenerating $\xi(r)$ with the
+corrected P(k) estimator.** The earlier N=128³ run gave a single-realization
+SNR of ~3.4; mock-averaged values require recomputation.
+Note: an inconsistency exists between this document's prior value (~383) and the
+~80 quoted in `docs/report/report.tex` and `docs/slides/` — these will be
+reconciled once results are regenerated.
 
 ---
 
@@ -206,29 +212,17 @@ where $O_\text{wiggle} = [P_\text{lin}(k/\alpha) - P_\text{nw}(k/\alpha)]\,e^{-k
 
 ### Pre-Reconstruction Fit
 
-| Parameter | Value |
-|-----------|-------|
-| $\alpha$ | $0.97^{+0.43}_{-0.30}$ |
-| $\Sigma_\text{nl}$ | $4.79^{+3.56}_{-3.28}$ Mpc/$h$ |
-| Recovered $r_s$ | $r_s^\text{fid}/\alpha \approx 104$ Mpc/$h$ |
+**TODO(Dennis): regenerate broadband-marginalized MCMC results with corrected P(k) estimator.**
 
-![Pre-recon broadband-marginalized corner plot](../outputs/mcmc/corner_pre_recon_marg.png)
-
-![Pre-recon best-fit P(k), wiggle template, and residuals](../outputs/mcmc/bestfit_pre_recon_marg.png)
+<!-- TODO(Dennis): regenerate corner_pre_recon_marg.png and bestfit_pre_recon_marg.png -->
 
 ### Post-Reconstruction Fit
 
-| Parameter | Value |
-|-----------|-------|
-| $\alpha$ | $1.05^{+0.38}_{-0.33}$ |
-| $\Sigma_\text{nl}$ | $4.55^{+3.05}_{-3.07}$ Mpc/$h$ |
-| Recovered $r_s$ | $r_s^\text{fid}/\alpha \approx 96$ Mpc/$h$ |
+**TODO(Dennis): regenerate post-reconstruction MCMC results with corrected P(k) estimator.**
 
-![Post-recon broadband-marginalized corner plot](../outputs/mcmc/corner_post_recon_marg.png)
+<!-- TODO(Dennis): regenerate corner_post_recon_marg.png and bestfit_post_recon_marg.png -->
 
-![Post-recon best-fit P(k), wiggle template, and residuals](../outputs/mcmc/bestfit_post_recon_marg.png)
-
-Both pre- and post-reconstruction $\alpha$ posteriors are **consistent with the fiducial value** $\alpha = 1$ within their (broad) uncertainties. The large error bars reflect the limited constraining power of a single $(1500\;\text{Mpc}/h)^3$ box with $128^3$ particles.
+Both pre- and post-reconstruction $\alpha$ posteriors are expected to be consistent with the fiducial value $\alpha = 1$ within their (broad) uncertainties, given the limited constraining power of a single $(1500\;\text{Mpc}/h)^3$ box with $128^3$ particles.
 
 ---
 
@@ -241,24 +235,27 @@ The 4-panel summary figure captures the entire analysis pipeline in a single vie
 - **(c)** BAO wiggles: $P(k)/P_\text{nw}(k)$ ratio before and after reconstruction
 - **(d)** BAO dilation parameter $\alpha$ posteriors: pre- vs. post-reconstruction
 
-![4-panel pipeline summary](../outputs/figures/pipeline_summary.png)
+<!-- TODO(Dennis): regenerate pipeline_summary.png with corrected P(k) estimator -->
 
 ---
 
 ## Key Results Summary
 
+**TODO(Dennis): fill in this table after regenerating results with the corrected
+P(k) estimator (CIC deconvolution before shot-noise subtraction) from the full
+N=128³ run.  The prior values below are placeholders from an earlier code
+version and must not be cited until regenerated.**
+
 | Quantity | Value | Notes |
 |----------|-------|-------|
-| Sound horizon $r_s^\text{fid}$ | 100.9 Mpc/$h$ (= 149.8 Mpc) | EH98 eq. 26; `sound_horizon()` returns Mpc/h |
-| BAO bump location in $\xi(r)$ | ~105 Mpc/$h$ | Configuration-space peak |
-| Single N-body BAO SNR | 3.4 | In $r^2\xi(r)$, 80–160 Mpc/$h$ range |
-| Mock-averaged BAO SNR | ~383 | 100 lognormal realizations |
-| Pre-recon $\alpha$ (marg) | $0.97 \pm 0.36$ | Consistent with $\alpha = 1$ |
-| Post-recon $\alpha$ (marg) | $1.05 \pm 0.36$ | Consistent with $\alpha = 1$ |
-| Pre-recon $\alpha$ (recon summary) | $1.192 \pm 0.009$ | Tighter but biased — see discussion |
-| Post-recon $\alpha$ (recon summary) | $1.199 \pm 0.001$ | 8× tighter than pre-recon |
-| Pre-recon $\Sigma_\text{nl}$ (recon summary) | 2.3 Mpc/$h$ | |
-| Post-recon $\Sigma_\text{nl}$ (recon summary) | 0.6 Mpc/$h$ | Reconstruction reduces damping |
+| Sound horizon $r_s^\text{fid}$ | 100.9 Mpc/$h$ (= 149.8 Mpc) | EH98 eq. 26; `sound_horizon()` returns Mpc/h; code-derived, no regeneration needed |
+| BAO bump location in $\xi(r)$ | ~105 Mpc/$h$ | TODO(Dennis): recompute |
+| Single N-body BAO SNR | [pending] | TODO(Dennis): recompute |
+| Mock-averaged BAO SNR | [pending] | TODO(Dennis): recompute (note: report.tex cites ~80 from earlier run) |
+| Pre-recon $\alpha$ (marg) | [pending] | TODO(Dennis): regenerate |
+| Post-recon $\alpha$ (marg) | [pending] | TODO(Dennis): regenerate |
+| Pre-recon $\Sigma_\text{nl}$ | [pending] | TODO(Dennis): regenerate |
+| Post-recon $\Sigma_\text{nl}$ | [pending] | TODO(Dennis): regenerate |
 
 **Note on recovered $r_s$ values**: MCMC reports $r_s = r_s^\text{fid}/\alpha$
 where $r_s^\text{fid} \approx 100.9$ Mpc/$h$. Values near ~153 or ~142 Mpc/$h$
