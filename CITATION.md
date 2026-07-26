@@ -5,8 +5,8 @@ This project was developed as a course project for PHY 305.
 **Authorship:** The core simulation modules, MCMC implementation, and
 scientific validation described in `docs/RESULTS.md` were written by
 Dennis Wu.  CI/CD infrastructure (`.github/workflows/ci.yml`,
-`configs/ci_lightweight.yaml`), regression tests added in the
-`fix/cic-shotnoise-ordering` branch, and documentation revisions were
+`configs/ci_lightweight.yaml`), regression tests, and documentation
+revisions in the `copilot/make-bao-nbody-reproducible` branch were
 produced with GitHub Copilot coding-agent assistance and are pending
 Dennis Wu's review before being considered validated.  The MIT license
 in `LICENSE` covers Dennis Wu's original contributions; third-party

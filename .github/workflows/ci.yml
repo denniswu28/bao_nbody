@@ -76,14 +76,22 @@ jobs:
         run: |
           pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
 
-      - name: Create output directories
-        run: |
-          mkdir -p outputs/snapshots outputs/figures outputs/mcmc
-
       - name: Run full lightweight pipeline (ics → nbody → lognormal → pk → recon → mcmc)
         # --stage all runs every stage end-to-end using the deterministic
         # ci_lightweight config (N=16^3, 5 leapfrog steps, 500 MCMC samples).
-        # Must be run from src/ so bare imports (from utils import ...) resolve.
+        # Run from repo root so relative output paths in the config resolve to
+        # <repo_root>/outputs/.  main.py adds src/ to sys.path automatically
+        # (Python sets sys.path[0] to the script's directory).
         run: |
-          cd src
-          python main.py --config ../configs/ci_lightweight.yaml --stage all
+          python src/main.py --config configs/ci_lightweight.yaml --stage all
+
+      - name: Verify output artifacts were produced at documented paths
+        # Confirm that the pipeline wrote outputs to <repo_root>/outputs/,
+        # not src/outputs/, and that the minimum expected files exist.
+        run: |
+          echo "=== outputs/figures/ ==="
+          ls -1 outputs/figures/
+          echo "=== outputs/mcmc/ ==="
+          ls -1 outputs/mcmc/
+          test -f outputs/figures/pk_evolution.png || { echo "MISSING: outputs/figures/pk_evolution.png" && exit 1; }
+          ls outputs/mcmc/*.png > /dev/null 2>&1 || { echo "MISSING: no MCMC PNG plots in outputs/mcmc/" && exit 1; }

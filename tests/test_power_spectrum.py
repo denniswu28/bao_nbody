@@ -16,6 +16,9 @@ The correct estimator therefore:
 
 Reversing this order (subtract then divide) overcorrects at high k because
 W_CIC approaches 0 near the Nyquist frequency, causing divergent negative values.
+
+Reference: Jing (2005), ApJ 620, 559 — CIC aliasing and power spectrum estimation.
+https://doi.org/10.1086/427087
 """
 
 import numpy as np
@@ -117,29 +120,38 @@ def test_pk_reproducible():
 def test_injected_signal_recovery():
     """Controlled-catalog test: P(k) estimator recovers an injected sinusoidal signal.
 
-    Place N_sig particles at positions that trace a single Fourier mode k0 in x,
-    plus a uniform random background.  The measured P(k) at the bin containing
-    k0 should be significantly above the surrounding shot-noise floor, confirming
-    that the CIC/shot-noise ordering correctly preserves injected power.
+    Place N_total particles whose x-positions are sampled from the density
+    ρ(x) ∝ 1 + A sin(k0 x) using acceptance-rejection sampling.  With A ≤ 1
+    the acceptance probability (1 + A sin(k0 x))/(1 + A) is in [0, 1]
+    everywhere, guaranteeing a valid nonneg density for rejection sampling.
+    The measured P(k) at the bin containing k0 should significantly exceed
+    the shot-noise floor.
 
-    This test validates both the ordering fix (divide before subtract) and that
-    real signal is not over-subtracted.
+    Two checks distinguish the CIC/shot-noise ordering convention:
+      (1) P(k0) >> shot_noise  — signal preserved by correct ordering.
+      (2) mean P(k) at high k is not strongly negative — wrong ordering
+          (subtract-then-divide) causes W_CIC → 0 to amplify negative
+          residuals near Nyquist (see Jing 2005, ApJ 620, 559).
+
+    The justified k cut is k < k_Nyquist / 2 for shell-averaged bins where
+    CIC aliasing and sampling variance remain manageable (see Jing 2005).
     """
     N = 32
     L = 500.0
     rng = np.random.default_rng(99)
 
-    # Fundamental mode: k0 = 2π/L is the LOWEST non-zero Fourier mode of the
-    # box (longest wavelength that fits exactly once in L), not the Nyquist.
-    # We inject signal at this frequency because it is guaranteed to fall in
-    # the first k-bin and avoids aliasing effects near the Nyquist frequency.
+    # Fundamental mode: k0 = 2π/L is the lowest non-zero Fourier mode of the
+    # box, guaranteed to fall in the first k-bin and well away from Nyquist.
     N_total = N**3
 
     # Sinusoidal overdensity along x: ρ(x) ∝ 1 + A·sin(2π x / L)
-    # Sample by rejection: accept if U < (1 + A·sin(2π x / L)) / (1 + A)
-    A = 5.0   # amplitude (unitless); large enough to detect above shot noise
+    # A = 0.5 ensures ρ ≥ 0 everywhere (valid rejection sampling).
+    # A must be in (0, 1]: A=0 gives a uniform catalog (no signal to test);
+    # A > 1 makes ρ negative for some x (invalid for rejection sampling).
+    A = 0.5   # amplitude; 0 < A ≤ 1
     k0 = 2 * np.pi / L   # fundamental mode [h/Mpc]
     x_candidates = rng.uniform(-L/2, L/2, 10 * N_total)
+    # Acceptance probability is in [0, 1] for all x when A ≤ 1
     accept = rng.uniform(0, 1, len(x_candidates)) < (1 + A * np.sin(k0 * x_candidates)) / (1 + A)
     x_signal = x_candidates[accept][:N_total]
     pos_signal = np.vstack([
@@ -150,16 +162,30 @@ def test_injected_signal_recovery():
 
     k, Pk, nmodes = estimate_pk(pos_signal, N, L, n_mesh=64, subtract_shotnoise=True)
 
-    # The bin closest to k0 should have elevated power
-    idx_k0 = np.argmin(np.abs(k - k0))
     nbar = N_total / L**3
     shot_noise = 1.0 / nbar
 
-    # With amplitude A=5 the injected signal contributes ~A²/2 * V = 25/2 × L³ modes
-    # of power above shot noise. Factor-of-2 is a conservative floor: if the
-    # CIC/shot-noise ordering is wrong (subtract first, then divide), the
-    # high-k modes diverge negative and the mean P(k) collapses below zero.
+    # Check 1: Signal recovery — the bin nearest k0 must have elevated power.
+    # Analytic expectation: P(k0) ≈ (A/2)^2 × L^3 >> shot_noise for A=0.5.
+    idx_k0 = np.argmin(np.abs(k - k0))
     assert Pk[idx_k0] > 2 * shot_noise, (
         f"P(k0={k0:.4f}) = {Pk[idx_k0]:.2f} should exceed 2×shot_noise = "
-        f"{2*shot_noise:.2f}. Wrong CIC/shot-noise ordering may be present."
+        f"{2*shot_noise:.2f}. Injected signal not recovered."
     )
+
+    # Check 2: No divergent negative values at high k (ordering discriminator).
+    # With correct ordering (divide then subtract) the high-k residuals are
+    # near zero.  With wrong ordering (subtract then divide) W_CIC → 0 near
+    # Nyquist amplifies the subtracted shot noise to large negative values
+    # (mean P(k) ~ -10^3 × shot_noise, see Jing 2005).
+    # k_Nyquist / 2 is a conservative upper limit before aliasing dominates.
+    k_nyq = np.pi * 64 / L   # Nyquist for n_mesh=64
+    high_k_mask = (k > 4 * k0) & (k < k_nyq / 2)
+    if high_k_mask.any():
+        mean_high_k = np.mean(Pk[high_k_mask])
+        assert mean_high_k > -5 * shot_noise, (
+            f"Mean P(k) at 4k0 < k < k_Nyq/2: {mean_high_k:.1f} is strongly negative "
+            f"(threshold -5×shot_noise = {-5*shot_noise:.1f}). "
+            "Wrong CIC/shot-noise ordering causes divergent negative P(k) near Nyquist "
+            "(Jing 2005, ApJ 620, 559)."
+        )

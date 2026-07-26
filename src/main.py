@@ -10,6 +10,11 @@ from lognormal import generate_lognormal_catalog
 from power_spectrum import estimate_pk
 from mcmc import fit_bao
 
+# Pinned pyrecon install URL (single source of truth for error messages/docs).
+_PYRECON_INSTALL = (
+    "pip install \"pyrecon @ git+https://github.com/cosmodesi/pyrecon"
+    "@7d1e6c24598a05134c5958d109d9bcc7136ff83d\""
+)
 
 def stage_ics(cfg, cosmo, box, sim):
     print("\n" + "="*60)
@@ -109,7 +114,7 @@ def stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out):
         from pyrecon import IterativeFFTReconstruction
     except ImportError:
         print("  pyrecon not installed. Skipping reconstruction.")
-        print("  Install with: pip install pyrecon")
+        print(f"  Install with: {_PYRECON_INSTALL}")
         return None
 
     L = box['L']
@@ -310,6 +315,29 @@ def main():
     sim   = cfg['simulation']
     gal   = cfg['galaxy']
     out   = cfg['output']
+
+    # Resolve relative output paths against the project root so that outputs
+    # land in <repo_root>/outputs/ regardless of the working directory.
+    # main.py lives in src/, so its parent's parent is the project root.
+    _src_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(_src_dir)
+    for key in ('snapshot_dir', 'figure_dir', 'mcmc_dir'):
+        if not os.path.isabs(out[key]):
+            out[key] = os.path.normpath(os.path.join(project_root, out[key]))
+
+    # When --stage all is requested, fail clearly if pyrecon is not installed
+    # rather than silently skipping reconstruction and reporting "Pipeline complete."
+    if args.stage == 'all':
+        try:
+            import pyrecon  # noqa: F401
+        except ImportError:
+            raise SystemExit(
+                f"\nERROR: pyrecon is required for '--stage all' but is not installed.\n"
+                f"Install with:\n"
+                f"  {_PYRECON_INSTALL}\n"
+                "Or run a reduced workflow without reconstruction:\n"
+                "  python src/main.py --config configs/default.yaml --stage pk\n"
+            )
 
     os.makedirs(out['snapshot_dir'], exist_ok=True)
     os.makedirs(out['figure_dir'],   exist_ok=True)

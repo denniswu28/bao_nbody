@@ -1,5 +1,12 @@
 # BAO Analysis Pipeline — Results Summary
 
+> **Note on figures**: All figures embedded below are generated artifacts
+> (not committed to the repository).  Run the full pipeline with
+> `python src/main.py --config configs/default.yaml` to produce them in
+> `outputs/figures/` and `outputs/mcmc/`.  The numerical results, tables,
+> and discussion below are independent of whether the figures have been
+> generated.
+
 ## Overview
 
 Baryon acoustic oscillations (BAO) are a relic of sound waves that propagated through the photon–baryon plasma before recombination at $z \approx 1100$. These waves imprinted a characteristic separation scale — the **sound horizon** $r_s \approx 150$ Mpc — into the distribution of matter, visible today as a slight excess of galaxy pairs at that separation. Because $r_s$ is calibrated by CMB physics, it serves as a **standard ruler**: measuring its apparent size at different redshifts constrains the expansion history $H(z)$ and angular-diameter distance $d_A(z)$.
@@ -159,7 +166,7 @@ Key results from the reconstruction-summary MCMC fit:
 | $\alpha$ | $1.192 \pm 0.009$ | $1.199 \pm 0.001$ |
 | $\Sigma_\text{nl}$ | 2.3 Mpc/$h$ | 0.6 Mpc/$h$ |
 
-The post-reconstruction $\Sigma_\text{nl}$ drops from 2.3 to 0.6 Mpc/$h$, confirming that reconstruction reduces nonlinear BAO damping. The $\alpha$ uncertainty shrinks by nearly an order of magnitude. The systematic offset of $\alpha \approx 1.19$ from the fiducial $\alpha = 1$ is a known limitation of this small-box ($L = 1500$ Mpc/$h$), low-resolution ($N = 128^3$) simulation — see [Discussion](#discussion-known-limitations) below.
+The post-reconstruction $\Sigma_\text{nl}$ drops from 2.3 to 0.6 Mpc/$h$, indicating that reconstruction reduces nonlinear BAO damping. The $\alpha$ uncertainty shrinks by nearly an order of magnitude. The systematic offset of $\alpha \approx 1.19$ from the fiducial $\alpha = 1$ is a known limitation of this small-box ($L = 1500$ Mpc/$h$), low-resolution ($N = 128^3$) simulation — see [Discussion](#discussion-known-limitations) below.
 
 ---
 
@@ -342,25 +349,24 @@ An additional 20 snapshots spanning $z = 15.89$ to $z = 0$ are stored in `output
 ```bash
 # Setup
 pip install -r requirements.txt
-pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon"
+pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
 
-# Full pipeline
-cd src
-python main.py --config ../configs/default.yaml
+# Full pipeline (run from repo root; outputs go to outputs/)
+python src/main.py --config configs/default.yaml
 
 # Individual stages
-python main.py --config ../configs/default.yaml --stage ics
-python main.py --config ../configs/default.yaml --stage nbody
-python main.py --config ../configs/default.yaml --stage lognormal
-python main.py --config ../configs/default.yaml --stage pk
-python main.py --config ../configs/default.yaml --stage recon
-python main.py --config ../configs/default.yaml --stage mcmc
-python main.py --config ../configs/default.yaml --stage plots
+python src/main.py --config configs/default.yaml --stage ics
+python src/main.py --config configs/default.yaml --stage nbody
+python src/main.py --config configs/default.yaml --stage lognormal
+python src/main.py --config configs/default.yaml --stage pk
+python src/main.py --config configs/default.yaml --stage recon
+python src/main.py --config configs/default.yaml --stage mcmc
+python src/main.py --config configs/default.yaml --stage plots
 
-# Standalone scripts
+# Standalone scripts (must be run from src/)
+cd src
 python compute_xi.py          # Correlation function + BAO SNR
 python run_bao_marg.py        # Broadband-marginalized MCMC
-python make_summary_plot.py   # 4-panel summary figure
 
 # Tests (from repo root)
 pytest tests/ -v

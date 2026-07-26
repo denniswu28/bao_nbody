@@ -68,29 +68,32 @@ pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24
 
 ## Usage
 
-Run the full pipeline (requires ~20 min and ~4 GB RAM for default config):
+Run the full pipeline (requires pyrecon, ~20 min and ~4 GB RAM for default config):
 
 ```bash
-cd src
-python main.py --config ../configs/default.yaml
+python src/main.py --config configs/default.yaml
 ```
 
 Run individual stages:
 
 ```bash
-python main.py --config ../configs/default.yaml --stage ics
-python main.py --config ../configs/default.yaml --stage nbody
-python main.py --config ../configs/default.yaml --stage lognormal
-python main.py --config ../configs/default.yaml --stage pk
-python main.py --config ../configs/default.yaml --stage recon
-python main.py --config ../configs/default.yaml --stage mcmc
+python src/main.py --config configs/default.yaml --stage ics
+python src/main.py --config configs/default.yaml --stage nbody
+python src/main.py --config configs/default.yaml --stage lognormal
+python src/main.py --config configs/default.yaml --stage pk
+python src/main.py --config configs/default.yaml --stage recon
+python src/main.py --config configs/default.yaml --stage mcmc
 ```
 
-Quick smoke test (lightweight config, ~30 seconds):
+All commands above are run from the **repository root**; outputs are written
+to `outputs/` relative to the root.  `main.py` resolves output paths via the
+script's own location (`src/`), so the working directory does not affect where
+files land.
+
+Quick smoke test (lightweight config, requires pyrecon, ~30 seconds end-to-end):
 
 ```bash
-cd src
-python main.py --config ../configs/ci_lightweight.yaml --stage ics
+python src/main.py --config configs/ci_lightweight.yaml --stage all
 ```
 
 ## Testing
