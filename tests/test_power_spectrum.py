@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from power_spectrum import estimate_pk, cic_window_correction_1d
 
 
-def _pk_wrong_ordering(pos, N, L, n_mesh=64):
+def _pk_wrong_ordering(pos, L, n_mesh=64):
     """Deliberately wrong estimator: subtract shot noise BEFORE dividing by W_CIC^2.
 
     This overcorrects at high k where W_CIC → 0, causing divergent negative values
@@ -219,8 +219,10 @@ def test_injected_signal_recovery():
 
     # Check 1: Analytic signal amplitude within a justified tolerance.
     # Analytic P at the fundamental mode: (A/2)^2 × V = (0.25)^2 × 500^3 ≈ 7.8e6.
-    # The shell-averaged bin includes ~18 modes; the 2 signal modes (±k0 along x)
-    # contribute ~(2/18) × P_analytic ≈ 0.11 × P_analytic after averaging.
+    # The shell-averaged bin includes approximately 18 modes for n_mesh=64, L=500
+    # (6 axis-aligned ±k0 modes plus 12 face-diagonal modes with |k|=√2·k0 that
+    # also fall in the first included bin).  The 2 signal modes (±k0 along x)
+    # contribute ~(2/18) × P_analytic ≈ 0.11 × P_analytic after shell averaging.
     # A 5% floor (0.05 × P_analytic) provides generous margin for sampling noise.
     idx_k0 = np.argmin(np.abs(k - k0))
     analytic_Pk0 = (A / 2)**2 * L**3
@@ -252,10 +254,10 @@ def test_injected_signal_recovery():
 
     # Cross-check: the WRONG ordering must FAIL the same high-k assertion.
     # This verifies that the test actually discriminates the two conventions.
-    k_wr, Pk_wr = _pk_wrong_ordering(pos_signal, N, L, n_mesh=64)
-    high_k_wr = k_wr > 0.8 * k_nyq
-    if high_k_wr.any():
-        mean_wrong_high_k = np.mean(Pk_wr[high_k_wr])
+    k_wrong, Pk_wrong = _pk_wrong_ordering(pos_signal, L, n_mesh=64)
+    high_k_wrong = k_wrong > 0.8 * k_nyq
+    if high_k_wrong.any():
+        mean_wrong_high_k = np.mean(Pk_wrong[high_k_wrong])
         assert mean_wrong_high_k < -0.5 * shot_noise, (
             f"Wrong ordering should produce mean P(k) < -0.5 × shot_noise "
             f"at k > 0.8 k_Nyq, but got {mean_wrong_high_k:.1f} "
