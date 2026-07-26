@@ -73,7 +73,9 @@ def test_sound_horizon_nowiggle_consistency():
     # Verify T_nw is a valid transfer function: evaluate at a few wavenumbers
     k_test = np.array([0.01, 0.05, 0.1, 0.2, 0.5])  # h/Mpc
     T_nw = transfer_function_nowiggle(k_test, h, Omega_m, Omega_b)
-    assert np.all(T_nw > 0) and np.all(T_nw <= 1.0 + 1e-9), (
+    # Allow a tiny tolerance above 1.0 for floating-point rounding at very large scales
+    _T_UPPER_TOL = 1e-9
+    assert np.all(T_nw > 0) and np.all(T_nw <= 1.0 + _T_UPPER_TOL), (
         f"No-wiggle T(k) out of range (0, 1]: {T_nw}"
     )
     # T_nw should be close to 1 at large scales and decrease at small scales

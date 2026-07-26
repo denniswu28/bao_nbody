@@ -22,7 +22,9 @@ def test_stage_recon_returns_none_without_pyrecon(monkeypatch):
     stage_mcmc and stage_plots both guard on `pos_recon is not None`,
     so this None sentinel must be returned (not raise) when pyrecon absent.
     """
-    # Make pyrecon appear uninstallable by patching sys.modules
+    # Setting sys.modules['pyrecon'] = None causes `from pyrecon import ...`
+    # to raise ImportError ("import of pyrecon halted; None in sys.modules"),
+    # which is exactly what stage_recon's try/except ImportError catches.
     monkeypatch.setitem(sys.modules, 'pyrecon', None)
 
     fake_pos = np.zeros((3, 8))  # 2^3 particles, shape (3, N)

@@ -129,14 +129,16 @@ def test_injected_signal_recovery():
     L = 500.0
     rng = np.random.default_rng(99)
 
-    # Fundamental mode k0 = 2π/L in x direction; inject 10 × shot-noise amplitude
+    # Fundamental mode: k0 = 2π/L is the LOWEST non-zero Fourier mode of the
+    # box (longest wavelength that fits exactly once in L), not the Nyquist.
+    # We inject signal at this frequency because it is guaranteed to fall in
+    # the first k-bin and avoids aliasing effects near the Nyquist frequency.
     N_total = N**3
-    pos_uniform = rng.uniform(-L/2, L/2, (3, N_total))
 
     # Sinusoidal overdensity along x: ρ(x) ∝ 1 + A·sin(2π x / L)
     # Sample by rejection: accept if U < (1 + A·sin(2π x / L)) / (1 + A)
     A = 5.0   # amplitude (unitless); large enough to detect above shot noise
-    k0 = 2 * np.pi / L
+    k0 = 2 * np.pi / L   # fundamental mode [h/Mpc]
     x_candidates = rng.uniform(-L/2, L/2, 10 * N_total)
     accept = rng.uniform(0, 1, len(x_candidates)) < (1 + A * np.sin(k0 * x_candidates)) / (1 + A)
     x_signal = x_candidates[accept][:N_total]
@@ -153,8 +155,10 @@ def test_injected_signal_recovery():
     nbar = N_total / L**3
     shot_noise = 1.0 / nbar
 
-    # P(k0) should exceed the shot noise floor by at least a factor of 2
-    # (wrong ordering would give large negative values, failing this test)
+    # With amplitude A=5 the injected signal contributes ~A²/2 * V = 25/2 × L³ modes
+    # of power above shot noise. Factor-of-2 is a conservative floor: if the
+    # CIC/shot-noise ordering is wrong (subtract first, then divide), the
+    # high-k modes diverge negative and the mean P(k) collapses below zero.
     assert Pk[idx_k0] > 2 * shot_noise, (
         f"P(k0={k0:.4f}) = {Pk[idx_k0]:.2f} should exceed 2×shot_noise = "
         f"{2*shot_noise:.2f}. Wrong CIC/shot-noise ordering may be present."
