@@ -228,10 +228,12 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
     print(f"  Lognormal: r_s = {r_s:.2f} Mpc/h")
 
     # fit reconstructed catalog if available
+    # stage_recon returns a dict {'pos_data': (3,N) array, 'delta_rec': grid}
     if pos_recon is not None:
         from power_spectrum import estimate_pk
         from utils import pk_error_gaussian
-        k_r, Pk_r, nm_r = estimate_pk(pos_recon, box['N'], box['L'], n_mesh=box['N_mesh'])
+        pos_recon_arr = pos_recon['pos_data']
+        k_r, Pk_r, nm_r = estimate_pk(pos_recon_arr, box['N'], box['L'], n_mesh=box['N_mesh'])
         Pk_r_err = pk_error_gaussian(Pk_r, nm_r)
         mask = (k_r > 0.02) & (k_r < 0.3)
         cov_sub, hartlap = (None, 1.0)

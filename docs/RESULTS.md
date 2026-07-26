@@ -67,7 +67,7 @@ The matter power spectrum is computed using the **Eisenstein & Hu (1998)** analy
 
 The ratio $P(k)/P_\text{nw}(k)$ oscillates around unity — these are the BAO wiggles that encode the sound horizon scale.
 
-![Eisenstein-Hu power spectrum with and without BAO wiggles, and their ratio](outputs/figures/pk_input.png)
+![Eisenstein-Hu power spectrum with and without BAO wiggles, and their ratio](../outputs/figures/pk_input.png)
 
 ---
 
@@ -81,7 +81,7 @@ $$\mathbf{v}_\text{pec} = a\,H(z)\,f(z)\,D(z)\,\boldsymbol{\Psi}_0$$
 
 At $z = 49$: $D \approx 0.02$, so particle displacements are small (a few Mpc/$h$) and the density field is nearly linear. The measured P(k) from the displaced particles matches the input linear theory to high precision:
 
-![IC power spectrum validation: measured from particles vs. input theory at z=49](outputs/figures/ic_pk_check.png)
+![IC power spectrum validation: measured from particles vs. input theory at z=49](../outputs/figures/ic_pk_check.png)
 
 ---
 
@@ -98,13 +98,13 @@ A **particle-mesh (PM) leapfrog** integrator evolves $128^3$ particles from $z =
 
 The density field evolves from a nearly uniform distribution at high redshift into the cosmic web of filaments, walls, and voids by $z = 0$:
 
-![Density field slices at z = 5.4, 2.0, 1.0, 0.5, 0.0](outputs/figures/density_evolution.png)
+![Density field slices at z = 5.4, 2.0, 1.0, 0.5, 0.0](../outputs/figures/density_evolution.png)
 
 ### Power Spectrum Evolution
 
 The measured P(k) grows with time and agrees well with linear theory at large scales ($k \lesssim 0.05$ $h$/Mpc). At smaller scales, nonlinear structure formation causes the measured P(k) to exceed linear predictions — the ratio $P_\text{measured}/P_\text{linear}$ increasingly deviates from unity at high $k$ and low $z$:
 
-![Power spectrum at five redshifts (left) and ratio to linear theory (right)](outputs/figures/pk_evolution.png)
+![Power spectrum at five redshifts (left) and ratio to linear theory (right)](../outputs/figures/pk_evolution.png)
 
 The BAO wiggles, clearly visible in the linear input P(k), become progressively damped by nonlinear gravitational evolution. This damping is the key physical effect that motivates BAO reconstruction.
 
@@ -125,7 +125,7 @@ $$\hat{C}^{-1}_\text{Hartlap} = \frac{N_\text{mocks} - N_\text{bins} - 2}{N_\tex
 
 Diagnostics show the correlation matrix is diagonally dominant with mild off-diagonal correlations, and fractional P(k) errors are $\lesssim 5\%$ for $k > 0.02$ $h$/Mpc:
 
-![Lognormal mean P(k), correlation matrix, and fractional error](outputs/figures/covariance_diagnostics.png)
+![Lognormal mean P(k), correlation matrix, and fractional error](../outputs/figures/covariance_diagnostics.png)
 
 ---
 
@@ -144,13 +144,13 @@ The displaced data and random positions define a density–random (D−R) field 
 
 Post-reconstruction, the power spectrum rises closer to linear theory at intermediate scales ($k \sim 0.05$–$0.2$ $h$/Mpc):
 
-![Pre- and post-recon P(k) and P/P_nw ratio](outputs/figures/recon_comparison.png)
+![Pre- and post-recon P(k) and P/P_nw ratio](../outputs/figures/recon_comparison.png)
 
 ### Reconstruction Summary
 
 The 4-panel reconstruction summary shows the power spectra, BAO wiggle ratio, and MCMC posteriors for $\alpha$ and $\Sigma_\text{nl}$:
 
-![BAO reconstruction summary: P(k), wiggles, α and Σ posteriors](outputs/figures/recon_summary.png)
+![BAO reconstruction summary: P(k), wiggles, α and Σ posteriors](../outputs/figures/recon_summary.png)
 
 Key results from the reconstruction-summary MCMC fit:
 
@@ -169,7 +169,7 @@ The two-point correlation function $\xi(r)$ provides a complementary view of the
 
 The plot shows $r^2 \xi(r)$ for linear theory, the N-body simulation at $z = 0$, the mean of 100 lognormal mocks, and the post-reconstruction D−R field:
 
-![Correlation function r²ξ(r) showing the BAO bump](outputs/figures/xi_correlation_function.png)
+![Correlation function r²ξ(r) showing the BAO bump](../outputs/figures/xi_correlation_function.png)
 
 ### BAO Signal-to-Noise
 
@@ -205,9 +205,9 @@ where $O_\text{wiggle} = [P_\text{lin}(k/\alpha) - P_\text{nw}(k/\alpha)]\,e^{-k
 | $\Sigma_\text{nl}$ | $4.79^{+3.56}_{-3.28}$ Mpc/$h$ |
 | Recovered $r_s$ | $r_s^\text{fid}/\alpha \approx 104$ Mpc/$h$ |
 
-![Pre-recon broadband-marginalized corner plot](outputs/mcmc/corner_pre_recon_marg.png)
+![Pre-recon broadband-marginalized corner plot](../outputs/mcmc/corner_pre_recon_marg.png)
 
-![Pre-recon best-fit P(k), wiggle template, and residuals](outputs/mcmc/bestfit_pre_recon_marg.png)
+![Pre-recon best-fit P(k), wiggle template, and residuals](../outputs/mcmc/bestfit_pre_recon_marg.png)
 
 ### Post-Reconstruction Fit
 
@@ -217,9 +217,9 @@ where $O_\text{wiggle} = [P_\text{lin}(k/\alpha) - P_\text{nw}(k/\alpha)]\,e^{-k
 | $\Sigma_\text{nl}$ | $4.55^{+3.05}_{-3.07}$ Mpc/$h$ |
 | Recovered $r_s$ | $r_s^\text{fid}/\alpha \approx 96$ Mpc/$h$ |
 
-![Post-recon broadband-marginalized corner plot](outputs/mcmc/corner_post_recon_marg.png)
+![Post-recon broadband-marginalized corner plot](../outputs/mcmc/corner_post_recon_marg.png)
 
-![Post-recon best-fit P(k), wiggle template, and residuals](outputs/mcmc/bestfit_post_recon_marg.png)
+![Post-recon best-fit P(k), wiggle template, and residuals](../outputs/mcmc/bestfit_post_recon_marg.png)
 
 Both pre- and post-reconstruction $\alpha$ posteriors are **consistent with the fiducial value** $\alpha = 1$ within their (broad) uncertainties. The large error bars reflect the limited constraining power of a single $(1500\;\text{Mpc}/h)^3$ box with $128^3$ particles.
 
@@ -234,7 +234,7 @@ The 4-panel summary figure captures the entire analysis pipeline in a single vie
 - **(c)** BAO wiggles: $P(k)/P_\text{nw}(k)$ ratio before and after reconstruction
 - **(d)** BAO dilation parameter $\alpha$ posteriors: pre- vs. post-reconstruction
 
-![4-panel pipeline summary](outputs/figures/pipeline_summary.png)
+![4-panel pipeline summary](../outputs/figures/pipeline_summary.png)
 
 ---
 
@@ -287,7 +287,7 @@ have been removed.  The $\alpha$ posteriors (dimensionless) are unaffected.
 | `snap_0033_z0.50.h5` | 0.50 |
 | `snap_0050_z0.00.h5` | 0.00 |
 
-An additional 20 snapshots spanning $z = 15.89$ to $z = 0$ are stored in `src/outputs/snapshots/` and were used to produce the density evolution animation (`src/outputs/figures/density_evolution.mp4`).
+An additional 20 snapshots spanning $z = 15.89$ to $z = 0$ are stored in `outputs/snapshots/` and were used to produce the density evolution animation (`outputs/figures/density_evolution.mp4`).
 
 ### Data Files (`outputs/mcmc/`)
 
@@ -333,7 +333,7 @@ An additional 20 snapshots spanning $z = 15.89$ to $z = 0$ are stored in `src/ou
 
 | File | Description |
 |------|-------------|
-| `src/outputs/figures/density_evolution.mp4` | Animated density field evolution $z = 49 \to 0$ |
+| `outputs/figures/density_evolution.mp4` | Animated density field evolution $z = 49 \to 0$ |
 
 ---
 

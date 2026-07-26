@@ -1,5 +1,11 @@
 name: CI
 
+# Supported platforms: Linux (ubuntu-latest) only.
+# macOS and Windows builds are NOT supported: pyrecon and its transitive
+# dependencies (pyfftw, mpytools) require native compilation that is
+# unavailable or untested on those platforms.  Do not add macOS/Windows
+# matrix entries without first verifying a clean install.
+
 on:
   push:
     branches: ["main", "master"]
@@ -34,11 +40,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install pyrecon (optional — skip on failure)
+      - name: Install pyrecon (pinned commit; numpy 2-compatible)
+        # Pinned to 7d1e6c24 — the commit that adds numpy>=2 copy=False fix.
+        # If this install fails the job fails (no silent skip — fail closed).
         run: |
-          pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon" || \
-            echo "pyrecon install failed — reconstruction stage will be skipped"
-        continue-on-error: true
+          pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
 
       - name: Run unit tests
         run: |
@@ -46,7 +52,7 @@ jobs:
           pytest tests/ -v --tb=short
 
   lightweight-pipeline:
-    name: Lightweight pipeline smoke-test
+    name: Lightweight pipeline smoke-test (full --stage all)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -64,21 +70,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install pyrecon (pinned commit; numpy 2-compatible)
+        # Pinned to 7d1e6c24 — the commit that adds numpy>=2 copy=False fix.
+        # If this install fails the job fails (no silent skip — fail closed).
+        run: |
+          pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
+
       - name: Create output directories
         run: |
           mkdir -p outputs/snapshots outputs/figures outputs/mcmc
 
-      - name: Run ICS stage (smoke test)
+      - name: Run full lightweight pipeline (ics → nbody → lognormal → pk → recon → mcmc)
+        # --stage all runs every stage end-to-end using the deterministic
+        # ci_lightweight config (N=16^3, 5 leapfrog steps, 500 MCMC samples).
+        # Must be run from src/ so bare imports (from utils import ...) resolve.
         run: |
           cd src
-          python main.py --config ../configs/ci_lightweight.yaml --stage ics
-
-      - name: Run N-body stage (smoke test)
-        run: |
-          cd src
-          python main.py --config ../configs/ci_lightweight.yaml --stage nbody
-
-      - name: Run lognormal stage (smoke test)
-        run: |
-          cd src
-          python main.py --config ../configs/ci_lightweight.yaml --stage lognormal
+          python main.py --config ../configs/ci_lightweight.yaml --stage all

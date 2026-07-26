@@ -55,12 +55,13 @@ def test_sound_horizon_regression():
 
 
 def test_sound_horizon_nowiggle_consistency():
-    """transfer_function_nowiggle divides sound_horizon by h for Mpc units.
+    """transfer_function_nowiggle uses sound_horizon(h,Om,Ob)/h internally.
 
     The no-wiggle transfer function uses k*s (dimensionless) where k is in Mpc^-1
     (EH98 internals) and s = sound_horizon(h,Om,Ob)/h is in Mpc.  This test
-    checks that the round-trip is consistent: a change in h shifts the feature
-    while the dimensionless combination k*s stays fixed.
+    verifies that:
+    1. The Mpc sound horizon is in the expected EH98 range (~149 Mpc).
+    2. The no-wiggle T(k) evaluated at k matching the BAO scale is in (0, 1].
     """
     from pk_input import transfer_function_nowiggle
     h, Omega_m, Omega_b = 0.6736, 0.3153, 0.0493
@@ -68,6 +69,16 @@ def test_sound_horizon_nowiggle_consistency():
     r_s_mpc = r_s_code / h                          # Mpc (for EH98 internals)
     assert 130 < r_s_mpc < 165, (
         f"Sound horizon in Mpc = {r_s_mpc:.1f}; expected ~149 Mpc from EH98 eq.26"
+    )
+    # Verify T_nw is a valid transfer function: evaluate at a few wavenumbers
+    k_test = np.array([0.01, 0.05, 0.1, 0.2, 0.5])  # h/Mpc
+    T_nw = transfer_function_nowiggle(k_test, h, Omega_m, Omega_b)
+    assert np.all(T_nw > 0) and np.all(T_nw <= 1.0 + 1e-9), (
+        f"No-wiggle T(k) out of range (0, 1]: {T_nw}"
+    )
+    # T_nw should be close to 1 at large scales and decrease at small scales
+    assert T_nw[0] > T_nw[-1], (
+        "No-wiggle T(k) should decrease from large to small scales"
     )
 
 

@@ -1,9 +1,18 @@
 # Citations and Attributions
 
-This project was developed as a course project for PHY 305. All
-repository-owned code (pipeline modules, tests, configuration) was designed,
-implemented, and validated by Dennis Wu. Third-party libraries, papers, and
-upstream code are cited below.
+This project was developed as a course project for PHY 305.
+
+**Authorship:** The core simulation modules, MCMC implementation, and
+scientific validation described in `docs/RESULTS.md` were written by
+Dennis Wu.  CI/CD infrastructure (`.github/workflows/ci.yml`,
+`configs/ci_lightweight.yaml`), regression tests added in the
+`fix/cic-shotnoise-ordering` branch, and documentation revisions were
+produced with GitHub Copilot coding-agent assistance and are pending
+Dennis Wu's review before being considered validated.  The MIT license
+in `LICENSE` covers Dennis Wu's original contributions; third-party
+library licenses are listed separately below.
+
+Third-party libraries, papers, and upstream code are cited below.
 
 ---
 
@@ -58,8 +67,9 @@ BAO reconstruction library (optional dependency, used in `src/main.py`
 >
 > License: BSD-3-Clause (see https://github.com/cosmodesi/pyrecon/blob/main/LICENSE)
 >
-> Install: `pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon"`
-> Note: PyPI release 0.3.0 has a broken sdist; install from source.
+> Install: `pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"`
+> Pinned commit: `7d1e6c24` (2026-03-26) — includes numpy>=2 copy=False compatibility fix.
+> Supported on Linux only; Windows and macOS are untested.
 
 ### LogNormalSimulations (reference)
 The lognormal mock generation approach in `src/lognormal.py` follows the

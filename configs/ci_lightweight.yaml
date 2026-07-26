@@ -7,7 +7,9 @@
 # to produce physically accurate results.  Use configs/default.yaml for the
 # full scientific run (~20 min, ~4 GB RAM with N=128^3).
 #
-# Determinism: all seeds are fixed; results are bit-for-bit reproducible.
+# Determinism: all seeds are fixed. Results are reproducible on the same
+# platform and Python/NumPy version, but may differ across environments
+# due to floating-point implementation differences.
 
 cosmology:
   h: 0.6736

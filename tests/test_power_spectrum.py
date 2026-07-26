@@ -112,3 +112,50 @@ def test_pk_reproducible():
     k1, Pk1, nm1 = estimate_pk(pos, N, L, n_mesh=32)
     k2, Pk2, nm2 = estimate_pk(pos, N, L, n_mesh=32)
     np.testing.assert_array_equal(Pk1, Pk2, err_msg="P(k) not reproducible")
+
+
+def test_injected_signal_recovery():
+    """Controlled-catalog test: P(k) estimator recovers an injected sinusoidal signal.
+
+    Place N_sig particles at positions that trace a single Fourier mode k0 in x,
+    plus a uniform random background.  The measured P(k) at the bin containing
+    k0 should be significantly above the surrounding shot-noise floor, confirming
+    that the CIC/shot-noise ordering correctly preserves injected power.
+
+    This test validates both the ordering fix (divide before subtract) and that
+    real signal is not over-subtracted.
+    """
+    N = 32
+    L = 500.0
+    rng = np.random.default_rng(99)
+
+    # Fundamental mode k0 = 2π/L in x direction; inject 10 × shot-noise amplitude
+    N_total = N**3
+    pos_uniform = rng.uniform(-L/2, L/2, (3, N_total))
+
+    # Sinusoidal overdensity along x: ρ(x) ∝ 1 + A·sin(2π x / L)
+    # Sample by rejection: accept if U < (1 + A·sin(2π x / L)) / (1 + A)
+    A = 5.0   # amplitude (unitless); large enough to detect above shot noise
+    k0 = 2 * np.pi / L
+    x_candidates = rng.uniform(-L/2, L/2, 10 * N_total)
+    accept = rng.uniform(0, 1, len(x_candidates)) < (1 + A * np.sin(k0 * x_candidates)) / (1 + A)
+    x_signal = x_candidates[accept][:N_total]
+    pos_signal = np.vstack([
+        x_signal,
+        rng.uniform(-L/2, L/2, len(x_signal)),
+        rng.uniform(-L/2, L/2, len(x_signal)),
+    ])
+
+    k, Pk, nmodes = estimate_pk(pos_signal, N, L, n_mesh=64, subtract_shotnoise=True)
+
+    # The bin closest to k0 should have elevated power
+    idx_k0 = np.argmin(np.abs(k - k0))
+    nbar = N_total / L**3
+    shot_noise = 1.0 / nbar
+
+    # P(k0) should exceed the shot noise floor by at least a factor of 2
+    # (wrong ordering would give large negative values, failing this test)
+    assert Pk[idx_k0] > 2 * shot_noise, (
+        f"P(k0={k0:.4f}) = {Pk[idx_k0]:.2f} should exceed 2×shot_noise = "
+        f"{2*shot_noise:.2f}. Wrong CIC/shot-noise ordering may be present."
+    )

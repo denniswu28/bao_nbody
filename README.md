@@ -56,13 +56,14 @@ pip install -r requirements.txt
 ```
 
 The reconstruction stage requires `pyrecon` (optional; pipeline skips
-gracefully if absent). PyPI release 0.3.0 has a broken sdist — install
-from source:
+gracefully if absent). Supported on **Linux only** (macOS/Windows untested).
+PyPI release 0.3.0 has a broken sdist — install from the pinned
+source commit that includes numpy>=2 compatibility:
 
 ```bash
-pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon"
+pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
 # or with optional extras (NUFFT, etc.):
-pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon"
+pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
 ```
 
 ## Usage
@@ -99,7 +100,11 @@ pytest tests/ -v
 ```
 
 All tests are deterministic (fixed seeds) and run without network access.
-Reconstruction tests are skipped if pyrecon is not installed.
+The reconstruction stage itself has no unit tests (reconstruction correctness
+is validated end-to-end via the CI lightweight pipeline smoke test).
+The stage interface tests in `tests/test_stage_interfaces.py` verify that
+`stage_recon` returns `None` when pyrecon is absent and that `stage_mcmc`
+handles that sentinel correctly without pyrecon installed.
 
 ## Conventions and Units
 

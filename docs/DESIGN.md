@@ -6,9 +6,7 @@ An end-to-end Baryon Acoustic Oscillation (BAO) analysis pipeline for PHY 305. T
 
 **Scientific narrative:** Sharp BAO signal in initial conditions → gravity smears it → reconstruction partially restores it → MCMC quantifies recovery.
 
-**Repo:** `~/bao_nbody/`  
-**Environment:** `bao305` (mamba, Python 3.11)  
-**Config:** `configs/default.yaml` (all runtime parameters)
+**Repo:** `~/bao_nbody/` | **Environment:** `bao305` (mamba, Python 3.11) | **Config:** `configs/default.yaml`
 
 ---
 
