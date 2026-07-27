@@ -128,7 +128,7 @@ handles that sentinel correctly without pyrecon installed.
 
 | Config | Description |
 |--------|-------------|
-| `configs/default.yaml` | Full scientific run ($128^3$, 1500 Mpc/$h$, 50 steps) |
+| `configs/default.yaml` | Full scientific run ($128^3$, $N_\text{mesh}=256$, 1500 Mpc/$h$, 50 steps) |
 | `configs/ci_lightweight.yaml` | CI smoke test ($32^3$, $N_\text{mesh}=64$, 500 Mpc/$h$, 5 steps) |
 
 ## Results
