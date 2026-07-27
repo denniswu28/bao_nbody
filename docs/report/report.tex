@@ -18,6 +18,9 @@
 \usepackage{caption}
 \captionsetup{font=small, labelfont=bf, skip=4pt}
 
+% --- Colors (for historical warning) ---
+\usepackage{xcolor}
+
 % --- Hyperlinks ---
 \usepackage[colorlinks,citecolor=blue,linkcolor=blue,urlcolor=blue]{hyperref}
 
@@ -28,6 +31,36 @@
 
 % ======================================================================
 \begin{document}
+
+% ------------------------------------------------------------------
+% HISTORICAL DOCUMENT WARNING
+% ------------------------------------------------------------------
+% This report was produced with a PRE-CORRECTED version of the P(k)
+% estimator (shot-noise subtracted BEFORE CIC deconvolution).  A bug
+% fix applied after submission reverses the order to the physically
+% correct sequence (CIC deconvolution first, then shot-noise
+% subtraction).  All numerical results in this document — including
+% the dilation parameters (alpha ~ 1.027 / 1.032), damping scales
+% (Sigma_nl), recovered sound horizons, SNR values (~80, ~3.4), and
+% the claims "confirms correctness", "exactly expected", and
+% "eliminates this bias entirely" — were derived from the
+% pre-corrected estimator and MUST NOT be cited until the pipeline
+% is re-run with the corrected estimator and results are verified.
+% See docs/RESULTS.md for current status (NEEDS_REVIEW items).
+% ------------------------------------------------------------------
+\begingroup
+  \color{red}
+  \textbf{HISTORICAL NOTE (NEEDS\_REVIEW):} This document was produced with
+  a \emph{pre-corrected} P(k) estimator (shot-noise subtracted before CIC
+  deconvolution).  All numerical results --- $\alpha \approx 1.027$/$1.032$,
+  $\Sigma_\mathrm{nl}$, SNR\,$\sim$\,80, recovered $r_s$ values --- and the
+  claims ``confirms correctness,'' ``exactly expected,'' and ``eliminates
+  this bias entirely'' are historical values from that earlier code version.
+  They \emph{must not be cited} until regenerated with the corrected estimator.
+  See \texttt{docs/RESULTS.md} for current status.
+\endgroup
+
+\bigskip
 
 \begin{center}
   {\Large\bfseries End-to-End Baryon Acoustic Oscillation Analysis Pipeline}\\[6pt]

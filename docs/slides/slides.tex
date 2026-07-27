@@ -34,6 +34,22 @@
 % ---------------------------------------------------------------- Title
 \maketitle
 
+% ------------------------------------------------ HISTORICAL WARNING
+% This comment must remain in the source. The frame below is required.
+% All numerical results in these slides (alpha ~ 1.027/1.032, SNR ~80,
+% Sigma_nl, "exactly expected", "eliminates this bias entirely") were
+% produced with a PRE-CORRECTED P(k) estimator. See docs/RESULTS.md.
+\begin{frame}[standout]
+  \small
+  \textbf{HISTORICAL NOTE — NEEDS\_REVIEW}\\[6pt]
+  These slides were produced with a \alert{pre-corrected} P(k) estimator
+  (shot-noise subtracted \emph{before} CIC deconvolution). All numerical
+  results --- $\alpha \approx 1.027$/$1.032$, $\Sigma_\mathrm{nl}$,
+  SNR\,$\approx$\,80 --- are historical values from that earlier code
+  version and \textbf{must not be cited} until regenerated with the
+  corrected estimator. See \texttt{docs/RESULTS.md} for current status.
+\end{frame}
+
 % -------------------------------------------------------- 1. Motivation
 \begin{frame}{The big idea: a sound wave left a ruler in the sky}
   \small
