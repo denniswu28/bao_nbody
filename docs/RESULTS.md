@@ -247,7 +247,7 @@ The 4-panel summary figure captures the entire analysis pipeline in a single vie
 
 **NEEDS_REVIEW: fill in this table after regenerating results with the corrected
 P(k) estimator (CIC deconvolution before shot-noise subtraction) from the full
-N=128³ run.  The prior values below are placeholders from a pre-corrected-estimator
+N=128³ run.  The historical values below are placeholders from a pre-corrected-estimator
 code version and must not be cited until regenerated.**
 
 | Quantity | Value | Notes |
