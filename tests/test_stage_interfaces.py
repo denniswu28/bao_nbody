@@ -201,6 +201,10 @@ def test_stage_plots_does_not_call_reconstruction(monkeypatch, tmp_path):
 
     recon_called = []
 
+    def _spy_recon(*a, **kw):
+        recon_called.append(True)
+        return None
+
     monkeypatch.setattr(pipeline, 'stage_ics',
                         lambda *a, **kw: (np.zeros((3, 8)), np.zeros((3, 8))))
     monkeypatch.setattr(pipeline, 'stage_nbody',
@@ -209,8 +213,7 @@ def test_stage_plots_does_not_call_reconstruction(monkeypatch, tmp_path):
                         lambda *a, **kw: (np.zeros((3, 8)), np.zeros((4, 4, 4))))
     monkeypatch.setattr(pipeline, 'stage_pk',
                         lambda *a, **kw: pk_stub)
-    monkeypatch.setattr(pipeline, 'stage_recon',
-                        lambda *a, **kw: recon_called.append(True) or None)
+    monkeypatch.setattr(pipeline, 'stage_recon', _spy_recon)
     monkeypatch.setattr(pipeline, 'stage_plots',
                         lambda *a, **kw: None)
 
