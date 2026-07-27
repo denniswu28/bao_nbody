@@ -1,11 +1,9 @@
 # Lightweight deterministic configuration for CI and quick smoke-tests.
 #
 # Designed to exercise the full pipeline (ICs → N-body → P(k) → lognormal →
-# MCMC) within typical CI resource limits (< 2 min, < 1 GB RAM).
-#
-# Scientific parameters are intentionally small — this config is NOT intended
-# to produce physically accurate results.  Use configs/default.yaml for the
-# full scientific run (~20 min, ~4 GB RAM with N=128^3).
+# MCMC). Scientific parameters are intentionally small — this config is NOT
+# intended to produce physically accurate results.  Use configs/default.yaml
+# for the full scientific run (N=128^3).
 #
 # Determinism: all seeds are fixed. Results are reproducible on the same
 # platform and Python/NumPy version, but may differ across environments

@@ -55,8 +55,9 @@ cd bao_nbody
 pip install -r requirements.txt
 ```
 
-The reconstruction stage requires `pyrecon` (optional; pipeline skips
-gracefully if absent). Supported on **Linux only** (macOS/Windows untested).
+The reconstruction stage requires `pyrecon`. **The `all`, `recon`, and
+`mcmc` stages fail with an error if pyrecon is not installed** — they do not
+silently skip. Supported on **Linux only** (macOS/Windows untested).
 PyPI release 0.3.0 has a broken sdist — install from the pinned
 source commit that includes numpy>=2 compatibility:
 
@@ -66,9 +67,14 @@ pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a0513
 pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
 ```
 
+> **NEEDS_REVIEW — transitive dependency gap:** `pyrecon@7d1e6c24` installs
+> `pmesh @ git+https://github.com/MP-Gadget/pmesh` without a pinned commit,
+> so full transitive reproducibility is not guaranteed. Pinning `pmesh`
+> requires a separate pyrecon fork or an upstream fix.
+
 ## Usage
 
-Run the full pipeline (requires pyrecon, ~20 min and ~4 GB RAM for default config):
+Run the full pipeline (requires pyrecon):
 
 ```bash
 python src/main.py --config configs/default.yaml
@@ -90,7 +96,7 @@ to `outputs/` relative to the root.  `main.py` resolves output paths via the
 script's own location (`src/`), so the working directory does not affect where
 files land.
 
-Quick smoke test (lightweight config, requires pyrecon, ~30 seconds end-to-end):
+Quick smoke test (lightweight config, requires pyrecon):
 
 ```bash
 python src/main.py --config configs/ci_lightweight.yaml --stage all
@@ -120,10 +126,10 @@ handles that sentinel correctly without pyrecon installed.
 
 ## Configuration
 
-| Config | Description | Resources |
-|--------|-------------|-----------|
-| `configs/default.yaml` | Full scientific run ($128^3$, 1500 Mpc/$h$, 50 steps) | ~20 min, ~4 GB |
-| `configs/ci_lightweight.yaml` | CI smoke test ($16^3$, 500 Mpc/$h$, 5 steps) | ~30 s, < 500 MB |
+| Config | Description |
+|--------|-------------|
+| `configs/default.yaml` | Full scientific run ($128^3$, 1500 Mpc/$h$, 50 steps) |
+| `configs/ci_lightweight.yaml` | CI smoke test ($32^3$, $N_\text{mesh}=64$, 500 Mpc/$h$, 5 steps) |
 
 ## Results
 
