@@ -69,8 +69,7 @@ pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24
 
 > **NEEDS_REVIEW — transitive dependency gap:** `pyrecon@7d1e6c24` installs
 > `pmesh @ git+https://github.com/MP-Gadget/pmesh` without a pinned commit,
-> so full transitive reproducibility is not guaranteed. Pinning `pmesh`
-> requires a separate pyrecon fork or an upstream fix.
+> so full transitive reproducibility is not guaranteed.
 
 ## Usage
 
@@ -123,6 +122,13 @@ handles that sentinel correctly without pyrecon installed.
 - **Positions**: shape `(3, N_particles)` everywhere
 - **Sound horizon**: `sound_horizon()` returns ~100.9 Mpc/$h$ (= ~149.8 Mpc from EH98 eq. 26)
 - **Seeds**: `simulation.seed=42`, `lognormal.seed=123` for reproducibility
+
+## P(k) Estimator Limitations
+
+`estimate_pk()` applies CIC deconvolution and restricts returned bins to
+`k < 0.9 × k_Nyquist`. This cut reduces but does not eliminate near-Nyquist
+aliasing and systematic bias from the finite CIC window. Results near the
+Nyquist frequency should be treated with caution regardless of the cut.
 
 ## Configuration
 

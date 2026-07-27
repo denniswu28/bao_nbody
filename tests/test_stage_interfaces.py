@@ -11,6 +11,7 @@ to estimate_pk() which expects a positional array.
 
 import numpy as np
 import sys, os
+import yaml
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import main as pipeline
@@ -153,4 +154,71 @@ def test_stage_mcmc_uses_pos_data_array(monkeypatch, tmp_path):
         f"estimate_pk received type '{received_types[0]}', expected 'ndarray'. "
         "stage_mcmc must extract pos_recon['pos_data'] before calling estimate_pk; "
         "passing the raw dict causes AttributeError on .shape."
+    )
+
+
+def test_stage_plots_does_not_call_reconstruction(monkeypatch, tmp_path):
+    """Behavioral: --stage plots dispatch must not invoke stage_recon.
+
+    stage_plots() does not use pos_recon; dispatching to plots must not trigger
+    a reconstruction call (which would fail closed if pyrecon is absent).
+    """
+    # Write a minimal config with absolute output paths.
+    cfg_data = {
+        'cosmology': {'h': 0.6736, 'Omega_m': 0.3153, 'Omega_b': 0.0493,
+                      'n_s': 0.9649, 'sigma8': 0.8111, 'z_eff': 0.38},
+        'box': {'L': 500.0, 'N': 8, 'N_mesh': 16},
+        'galaxy': {'b': 1.5, 'nbar': 3.0e-4},
+        'simulation': {'n_steps': 1, 'z_initial': 49.0,
+                       'z_snapshots': [0.0], 'seed': 42},
+        'lognormal': {'seed': 123},
+        'mcmc': {'n_steps': 5, 'n_burn': 1, 'alpha_init': 1.0,
+                 'Sigma_init': 5.0, 'B_init': 1.0,
+                 'alpha_prior': [0.5, 1.5], 'Sigma_prior': [0.0, 20.0],
+                 'B_prior': [0.5, 4.0]},
+        'output': {
+            'snapshot_dir': str(tmp_path / 'snap'),
+            'figure_dir': str(tmp_path / 'fig'),
+            'mcmc_dir': str(tmp_path / 'mcmc'),
+            'save_snapshots': False,
+            'make_animation': False,
+            'animation_fps': 5,
+        },
+    }
+    config_path = tmp_path / 'test_cfg.yaml'
+    config_path.write_text(yaml.dump(cfg_data))
+
+    k_stub = np.array([0.1])
+    pk_stub = {
+        'nbody': [{'k': k_stub, 'Pk': np.array([1000.0]),
+                   'Pk_err': np.array([100.0]), 'z': 0.0, 'a': 1.0}],
+        'lognormal': {'k': k_stub, 'Pk': np.array([1000.0]),
+                      'Pk_err': np.array([100.0])},
+        'theory': {'k': k_stub, 'Pk': np.array([1000.0])},
+    }
+    snapshots_stub = [{'pos': np.zeros((3, 8)), 'vel': np.zeros((3, 8)),
+                       'z': 0.0, 'a': 1.0}]
+
+    recon_called = []
+
+    monkeypatch.setattr(pipeline, 'stage_ics',
+                        lambda *a, **kw: (np.zeros((3, 8)), np.zeros((3, 8))))
+    monkeypatch.setattr(pipeline, 'stage_nbody',
+                        lambda *a, **kw: snapshots_stub)
+    monkeypatch.setattr(pipeline, 'stage_lognormal',
+                        lambda *a, **kw: (np.zeros((3, 8)), np.zeros((4, 4, 4))))
+    monkeypatch.setattr(pipeline, 'stage_pk',
+                        lambda *a, **kw: pk_stub)
+    monkeypatch.setattr(pipeline, 'stage_recon',
+                        lambda *a, **kw: recon_called.append(True) or None)
+    monkeypatch.setattr(pipeline, 'stage_plots',
+                        lambda *a, **kw: None)
+
+    monkeypatch.setattr(sys, 'argv',
+                        ['main.py', '--config', str(config_path), '--stage', 'plots'])
+    pipeline.main()
+
+    assert len(recon_called) == 0, (
+        "stage_recon must not be called for '--stage plots'; "
+        "stage_plots() does not use pos_recon."
     )

@@ -261,7 +261,7 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
     return chains
 
 
-def stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out):
+def stage_plots(snapshots, pk_results, cfg, cosmo, box, gal, out):
     print("\n" + "="*60)
     print("STAGE: Summary Plots")
     print("="*60)
@@ -361,7 +361,7 @@ def main():
     if stage in ('all', 'pk', 'mcmc', 'plots'):
         pk_results = stage_pk(snapshots, pos_ln, cfg, cosmo, box, gal, out)
 
-    if stage in ('all', 'recon', 'mcmc', 'plots'):
+    if stage in ('all', 'recon', 'mcmc'):
         pos_nbody_z0 = snapshots[-1]['pos']
         pos_recon = stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out)
 
@@ -369,7 +369,7 @@ def main():
         stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out)
 
     if stage in ('all', 'plots'):
-        stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out)
+        stage_plots(snapshots, pk_results, cfg, cosmo, box, gal, out)
 
     print("\n Pipeline complete.")
 
