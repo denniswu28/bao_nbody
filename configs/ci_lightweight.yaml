@@ -1,0 +1,55 @@
+# Lightweight deterministic configuration for CI and quick smoke-tests.
+#
+# Designed to exercise the full pipeline (ICs → N-body → P(k) → lognormal →
+# MCMC). Scientific parameters are intentionally small — this config is NOT
+# intended to produce physically accurate results.  Use configs/default.yaml
+# for the full scientific run (N=128^3).
+#
+# Determinism: all seeds are fixed. Results are reproducible on the same
+# platform and Python/NumPy version, but may differ across environments
+# due to floating-point implementation differences.
+
+cosmology:
+  h: 0.6736
+  Omega_m: 0.3153
+  Omega_b: 0.0493
+  n_s: 0.9649
+  sigma8: 0.8111
+  z_eff: 0.38
+
+box:
+  L: 500.0          # box side length [Mpc/h] — smaller than default (1500)
+  N: 32             # 32^3 = 32768 particles (vs 128^3 in default)
+  N_mesh: 64        # PM mesh (2x oversampling)
+
+galaxy:
+  b: 1.5
+  nbar: 3.0e-4      # [h/Mpc]^3
+
+simulation:
+  n_steps: 5        # 5 leapfrog steps (vs 50 in default)
+  z_initial: 49.0
+  z_snapshots:
+    - 0.0           # final snapshot only
+  seed: 42
+
+lognormal:
+  seed: 123
+
+mcmc:
+  n_steps: 500      # 500 MCMC steps (vs 10000 in default — convergence not expected)
+  n_burn: 100
+  alpha_init: 1.0
+  Sigma_init: 5.0
+  B_init: 1.0
+  alpha_prior: [0.5, 1.5]
+  Sigma_prior: [0.0, 20.0]
+  B_prior: [0.5, 4.0]
+
+output:
+  snapshot_dir: outputs/snapshots
+  figure_dir: outputs/figures
+  mcmc_dir: outputs/mcmc
+  save_snapshots: false   # skip HDF5 I/O in CI
+  make_animation: false
+  animation_fps: 5

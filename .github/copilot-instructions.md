@@ -36,7 +36,7 @@ Stages: `all`, `ics`, `nbody`, `lognormal`, `pk`, `recon`, `mcmc`, `plots`
 
 ## Architecture
 
-See [DESIGN.md](../DESIGN.md) for full module status, implementation order, and physics reference.
+See [DESIGN.md](../docs/DESIGN.md) for full module status, implementation order, and physics reference.
 
 ```
 configs/default.yaml   ← all runtime params (cosmology, box, simulation, mcmc)

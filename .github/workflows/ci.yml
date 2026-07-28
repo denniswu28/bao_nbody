@@ -1,0 +1,101 @@
+name: CI
+
+# Supported platforms: Linux (ubuntu-latest) only.
+# macOS and Windows builds are NOT supported: pyrecon and its transitive
+# dependencies (pyfftw, mpytools) require native compilation that is
+# unavailable or untested on those platforms.  Do not add macOS/Windows
+# matrix entries without first verifying a clean install.
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+# Minimal read-only permissions for the GITHUB_TOKEN.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install core dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install pyrecon (pinned commit; numpy 2-compatible)
+        # Pinned to 7d1e6c24 — the commit that adds numpy>=2 copy=False fix.
+        # If this install fails the job fails (no silent skip — fail closed).
+        run: |
+          pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
+
+      - name: Run unit tests
+        run: |
+          pip install pytest
+          pytest tests/ -v --tb=short
+
+  lightweight-pipeline:
+    name: Lightweight pipeline smoke-test (full --stage all)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install pyrecon (pinned commit; numpy 2-compatible)
+        # Pinned to 7d1e6c24 — the commit that adds numpy>=2 copy=False fix.
+        # If this install fails the job fails (no silent skip — fail closed).
+        run: |
+          pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
+
+      - name: Run full lightweight pipeline (ics → nbody → lognormal → pk → recon → mcmc)
+        # --stage all runs every stage end-to-end using the deterministic
+        # ci_lightweight config (N=32^3, 5 leapfrog steps, 500 MCMC samples).
+        # Run from repo root so relative output paths in the config resolve to
+        # <repo_root>/outputs/.  main.py adds src/ to sys.path automatically
+        # (Python sets sys.path[0] to the script's directory).
+        run: |
+          python src/main.py --config configs/ci_lightweight.yaml --stage all
+
+      - name: Verify output artifacts were produced at documented paths
+        # Confirm that:
+        # 1. Pipeline wrote outputs to <repo_root>/outputs/ (not src/outputs/)
+        # 2. Minimum expected figures exist
+        # 3. Reconstruction-specific MCMC output exists (corner_recon.png),
+        #    proving reconstruction actually ran rather than being silently skipped
+        run: |
+          echo "=== outputs/figures/ ==="
+          ls -1 outputs/figures/
+          echo "=== outputs/mcmc/ ==="
+          ls -1 outputs/mcmc/
+          test -f outputs/figures/pk_evolution.png || { echo "MISSING: outputs/figures/pk_evolution.png" && exit 1; }
+          test -f outputs/mcmc/corner_recon.png || { echo "MISSING: outputs/mcmc/corner_recon.png — reconstruction did not run" && exit 1; }
+          test -f outputs/mcmc/bestfit_recon.png || { echo "MISSING: outputs/mcmc/bestfit_recon.png — reconstruction MCMC did not complete" && exit 1; }

@@ -10,6 +10,11 @@ from lognormal import generate_lognormal_catalog
 from power_spectrum import estimate_pk
 from mcmc import fit_bao
 
+# Pinned pyrecon install URL (single source of truth for error messages/docs).
+_PYRECON_INSTALL = (
+    "pip install \"pyrecon @ git+https://github.com/cosmodesi/pyrecon"
+    "@7d1e6c24598a05134c5958d109d9bcc7136ff83d\""
+)
 
 def stage_ics(cfg, cosmo, box, sim):
     print("\n" + "="*60)
@@ -109,7 +114,7 @@ def stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out):
         from pyrecon import IterativeFFTReconstruction
     except ImportError:
         print("  pyrecon not installed. Skipping reconstruction.")
-        print("  Install with: pip install pyrecon")
+        print(f"  Install with: {_PYRECON_INSTALL}")
         return None
 
     L = box['L']
@@ -228,10 +233,12 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
     print(f"  Lognormal: r_s = {r_s:.2f} Mpc/h")
 
     # fit reconstructed catalog if available
+    # stage_recon returns a dict {'pos_data': (3,N) array, 'delta_rec': grid}
     if pos_recon is not None:
         from power_spectrum import estimate_pk
         from utils import pk_error_gaussian
-        k_r, Pk_r, nm_r = estimate_pk(pos_recon, box['N'], box['L'], n_mesh=box['N_mesh'])
+        pos_recon_arr = pos_recon['pos_data']
+        k_r, Pk_r, nm_r = estimate_pk(pos_recon_arr, box['N'], box['L'], n_mesh=box['N_mesh'])
         Pk_r_err = pk_error_gaussian(Pk_r, nm_r)
         mask = (k_r > 0.02) & (k_r < 0.3)
         cov_sub, hartlap = (None, 1.0)
@@ -254,7 +261,7 @@ def stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out):
     return chains
 
 
-def stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out):
+def stage_plots(snapshots, pk_results, cfg, cosmo, box, gal, out):
     print("\n" + "="*60)
     print("STAGE: Summary Plots")
     print("="*60)
@@ -309,6 +316,29 @@ def main():
     gal   = cfg['galaxy']
     out   = cfg['output']
 
+    # Resolve relative output paths against the project root so that outputs
+    # land in <repo_root>/outputs/ regardless of the working directory.
+    # main.py lives in src/, so its parent's parent is the project root.
+    _src_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(_src_dir)
+    for key in ('snapshot_dir', 'figure_dir', 'mcmc_dir'):
+        if not os.path.isabs(out[key]):
+            out[key] = os.path.normpath(os.path.join(project_root, out[key]))
+
+    # Stages that require reconstruction fail clearly if pyrecon is not installed,
+    # rather than silently skipping and reporting "Pipeline complete."
+    if args.stage in ('all', 'recon', 'mcmc'):
+        try:
+            import pyrecon  # noqa: F401
+        except ImportError:
+            raise SystemExit(
+                f"\nERROR: pyrecon is required for '--stage {args.stage}' but is not installed.\n"
+                f"Install with:\n"
+                f"  {_PYRECON_INSTALL}\n"
+                "Or run a reduced workflow without reconstruction:\n"
+                "  python src/main.py --config configs/default.yaml --stage pk\n"
+            )
+
     os.makedirs(out['snapshot_dir'], exist_ok=True)
     os.makedirs(out['figure_dir'],   exist_ok=True)
     os.makedirs(out['mcmc_dir'],     exist_ok=True)
@@ -331,7 +361,7 @@ def main():
     if stage in ('all', 'pk', 'mcmc', 'plots'):
         pk_results = stage_pk(snapshots, pos_ln, cfg, cosmo, box, gal, out)
 
-    if stage in ('all', 'recon', 'mcmc', 'plots'):
+    if stage in ('all', 'recon', 'mcmc'):
         pos_nbody_z0 = snapshots[-1]['pos']
         pos_recon = stage_recon(pos_nbody_z0, cfg, cosmo, box, gal, out)
 
@@ -339,7 +369,7 @@ def main():
         stage_mcmc(pk_results, pos_recon, cfg, cosmo, box, gal, out)
 
     if stage in ('all', 'plots'):
-        stage_plots(snapshots, pk_results, pos_recon, cfg, cosmo, box, gal, out)
+        stage_plots(snapshots, pk_results, cfg, cosmo, box, gal, out)
 
     print("\n Pipeline complete.")
 

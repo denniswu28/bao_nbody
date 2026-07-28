@@ -1,5 +1,14 @@
 # Speaker Script — *Measuring the Universe with Sound Waves*
 
+> **HISTORICAL NOTE — NEEDS_REVIEW**: This script accompanies slides produced
+> with a **pre-corrected** P(k) estimator (shot-noise subtracted before CIC
+> deconvolution). All numerical results cited below — α ≈ 1.027/1.032,
+> SNR ≈ 80, Σ_nl values, and the phrases "exactly what reconstruction is meant
+> to deliver" and "confirms the pipeline is working" — are historical values
+> from that earlier code version. **Do not cite these values** until the pipeline
+> is re-run with the corrected estimator and results are verified.
+> See `docs/RESULTS.md` for current status.
+
 Target runtime: ~6 minutes for slides 1–10. Bracketed cues are stage
 directions, not spoken.
 

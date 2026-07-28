@@ -5,4 +5,14 @@ pyyaml>=6.0
 h5py>=3.8
 tqdm>=4.65
 corner>=2.2
-pyrecon>=0.3
+
+# Reconstruction stage (all/recon/mcmc stages fail closed if absent).
+# Supported on Linux only; macOS and Windows are untested.
+# PyPI release 0.3.0 has a broken sdist; install from source instead.
+# Pin to the commit that includes the numpy>=2 copy=False fix (2026-03-26):
+#   pip install "pyrecon @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
+# or with optional algorithm extras (NUFFT, etc.):
+#   pip install "pyrecon[extras] @ git+https://github.com/cosmodesi/pyrecon@7d1e6c24598a05134c5958d109d9bcc7136ff83d"
+#
+# NEEDS_REVIEW (transitive dependency gap): pyrecon@7d1e6c24 pulls in
+# pmesh from git without a pinned commit; see README.md for details.

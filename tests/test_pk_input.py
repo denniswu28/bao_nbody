@@ -29,9 +29,59 @@ def test_sigma8_normalization():
 
 
 def test_sound_horizon_range():
-    """Sound horizon should be ~150 Mpc for Planck cosmology (EH98 fitting formula)."""
+    """Sound horizon should be ~101 Mpc/h (= ~150 Mpc) for Planck cosmology.
+
+    sound_horizon() returns r_s in Mpc/h via EH98 eq. 26 fitting formula.
+    The formula gives r_s_Mpc ≈ 149.8 Mpc; multiplying by h converts to
+    Mpc/h (h^-1 Mpc): r_s = r_s_Mpc * h ≈ 100.9 Mpc/h for Planck 2018.
+    Convention: all distances in this codebase are in Mpc/h.
+    """
     r_s = sound_horizon(0.6736, 0.3153, 0.0493)
-    assert 140 < r_s < 160, f"Unexpected r_s = {r_s:.1f} Mpc"
+    assert 90 < r_s < 115, f"Unexpected r_s = {r_s:.1f} Mpc/h"
+
+
+def test_sound_horizon_regression():
+    """Regression test: EH98 eq.26 Mpc/h value must stay within 1% of 100.9 Mpc/h.
+
+    sound_horizon() returns r_s = r_s_Mpc × h ≈ 100.9 Mpc/h where r_s_Mpc ≈ 149.8 Mpc
+    is the EH98 fitting formula output and h = 0.6736 converts to Mpc/h (h⁻¹ Mpc).
+    """
+    r_s = sound_horizon(0.6736, 0.3153, 0.0493)
+    r_s_expected = 100.92   # Mpc/h (= 149.8 Mpc * h)
+    assert abs(r_s - r_s_expected) / r_s_expected < 0.01, (
+        f"r_s = {r_s:.4f} Mpc/h, expected ~{r_s_expected} Mpc/h "
+        f"(EH98 eq.26, Planck 2018 cosmology)"
+    )
+
+
+def test_sound_horizon_nowiggle_consistency():
+    """transfer_function_nowiggle uses sound_horizon(h,Om,Ob)/h internally.
+
+    The no-wiggle transfer function uses k*s (dimensionless) where k is in Mpc^-1
+    (EH98 internals) and s = sound_horizon(h,Om,Ob)/h is in Mpc.  This test
+    verifies that:
+    1. The Mpc sound horizon is in the expected EH98 range (~149 Mpc).
+    2. The no-wiggle T(k) evaluated at k matching the BAO scale is in (0, 1].
+    """
+    from pk_input import transfer_function_nowiggle
+    h, Omega_m, Omega_b = 0.6736, 0.3153, 0.0493
+    r_s_code = sound_horizon(h, Omega_m, Omega_b)  # Mpc/h
+    r_s_mpc = r_s_code / h                          # Mpc (for EH98 internals)
+    assert 130 < r_s_mpc < 165, (
+        f"Sound horizon in Mpc = {r_s_mpc:.1f}; expected ~149 Mpc from EH98 eq.26"
+    )
+    # Verify T_nw is a valid transfer function: evaluate at a few wavenumbers
+    k_test = np.array([0.01, 0.05, 0.1, 0.2, 0.5])  # h/Mpc
+    T_nw = transfer_function_nowiggle(k_test, h, Omega_m, Omega_b)
+    # Allow a tiny tolerance above 1.0 for floating-point rounding at very large scales
+    _T_UPPER_TOL = 1e-9
+    assert np.all(T_nw > 0) and np.all(T_nw <= 1.0 + _T_UPPER_TOL), (
+        f"No-wiggle T(k) out of range (0, 1]: {T_nw}"
+    )
+    # T_nw should be close to 1 at large scales and decrease at small scales
+    assert T_nw[0] > T_nw[-1], (
+        "No-wiggle T(k) should decrease from large to small scales"
+    )
 
 
 def test_pk_positive():
